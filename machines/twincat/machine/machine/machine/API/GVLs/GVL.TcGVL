@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <GVL Name="GVL" Id="{2b94e56d-1be9-4ab0-97bc-18cca5fbb2b2}">
+    <Declaration><![CDATA[VAR_GLOBAL
+fbStation		:FB_Station;(*Function Block for  station*)
+stIO: ST_IO;
+axeX: AXIS_REF;
+END_VAR
+
+VAR_GLOBAL PERSISTENT
+stParam:ST_Param;//Basis structure with all parameters and status
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

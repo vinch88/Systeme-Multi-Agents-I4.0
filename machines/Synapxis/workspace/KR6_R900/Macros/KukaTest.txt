@@ -1,0 +1,146 @@
+.MODULE_BEGIN KukaTest
+
+.MODULE_VERSION 1.0
+
+.MODULE_DESCRIPTION
+
+.MODULE_PROGRAMS
+
+.PROGRAM KStart
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach()
+ensure(true)
+
+KMove()
+.END
+
+.PROGRAM KTransitionTest
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locj dd = {0, -90, 90, 0, 0, 0}
+    real dt
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach()
+ensure(true)
+
+//movej(dd)
+setSpeed(100)
+setAccel(100, 10)
+dt = clock()
+transitionMove("VidagePrehenseur")
+transitionMove("ParcourEnd")
+transitionMove("VidagePrehenseur")
+
+print("hoy", clock()-dt)
+.END
+
+.PROGRAM KMove
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locj lja = {12.5856, -88.552, 88.4539, 4.9e-03, 47.8383000, 12.5843000}, ljb = {-20, -105, 100, 0, 47.8383, 12.5843}
+    locc h, lca = {529.823, -118.295, 731.368, 168.796, 41.02, -175.798}, lcb = {408.586, 148.713, 758.124, -159.753, 43.555, 139.255}
+    bool brk
+
+.RETURN_TYPE none
+
+.BODY
+
+print("START JOB")
+
+//while(true)
+movej(lja)
+
+
+
+h = lca
+
+//setSynchronizedMove(false)
+move(h+trans(0,0,100))
+move(h+trans(0,100,100))
+move(h+trans(0,0,0))
+setSynchronizedMove(true)
+
+setSynchronizedMove(false)
+movej(ljb, false)
+print("A", clock())
+h = lcb
+brk = false
+move(h+trans( 0,0,100), 0, brk)
+print("B", clock())
+move(h+trans( 100, 100,100), 0, brk)
+print("C", clock())
+move(h+trans( 100,-100,100), 0, brk)
+print("D", clock())
+move(h+trans(-100,-100,100), 0, brk)
+print("E", clock())
+move(h+trans(-100, 100,100), 0, brk)
+print("F", clock())
+move(h+trans(0,100,200), 0, false)
+print("G", clock())
+
+
+setSynchronizedMove(true)
+movej(ljb, false)
+//waitEndMove()
+print("G OK")
+
+//move(h+trans(0,0,0))
+//setSynchronizedMove(true)
+//return
+//end
+
+print("END OF JOB")
+.END
+
+.PROGRAM KReady
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locj ljReady = {0, -90, 90, 0, 0, 0}
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach()
+
+if (simEnabled())
+    ensure(true)
+end
+
+movej(ljReady)
+.END
+
+.MODULE_GLOBAL_VARIABLES
+
+    locj gLja, gLjb
+
+.MODULE_GLOBAL_CONSTANTS
+
+
+.MODULE_END

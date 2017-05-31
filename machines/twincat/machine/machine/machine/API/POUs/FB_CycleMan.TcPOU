@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <POU Name="FB_CycleMan" Id="{22fd384b-137b-487d-8691-33de4fa9c903}" SpecialFunc="None">
+    <Declaration><![CDATA[(**********************************************************************************************************************************************************************
+*{He-Arc}  {Hôtle de ville 7}   {2400 Le Locle}       Phone: ++ 0041 (0)32 930 13 13     Fax: ++ 0041 (0)32 930 13 14         Email: ingenierie@he-arc.ch
+*=======================================================================================================================
+* {Give the complete list of every blocks for a source file with several blocks}
+*
+*=======================================================================================================================
+*Description: Cutting station manual cycle
+*
+*=======================================================================================================================
+*Version:        Date:               Author:                           Reason of modification:
+*1.0                   27.11.11         Fabien Golay              Initial Version 
+*1.1                                                                 
+*
+*
+************************************************************************************************************************************************************************)
+FUNCTION_BLOCK FB_CycleMan
+(**)
+VAR_INPUT
+	xStart			:BOOL; (*start input command*)
+	xStopCmdPin			:BOOL; (*stop input command*)
+	xReset			:BOOL; (*Reset input command*)
+
+END_VAR
+VAR_OUTPUT
+	xDone			:BOOL;(*Done output*)
+	xBusy				:BOOL;(*Busy output*)
+	xReady				:BOOL;(*Busy output*)
+	iStep			: INT;		(* cycle step *)
+END_VAR
+VAR_IN_OUT
+	//fbErrorAdmin:FB_ErrorAdmin;
+END_VAR
+VAR
+	
+	fbTrigStart			: R_Trig;	(*Trigger for start*)
+	fbTimer:TON;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Reset  if xReset is set to true*)
+IF xReset
+	THEN
+		xReset:=FALSE;
+		iStep:=0;
+		xDone:=FALSE;
+END_IF
+(********************************************************************************************************************************************************)
+(*								Start Management																 *)
+(********************************************************************************************************************************************************)
+fbTrigStart(CLK:=xStart );
+
+CASE  iStep OF
+
+	(* Activation du cycle*)
+	0:	IF fbTrigStart.Q  THEN
+		iStep:=5;
+	END_IF
+
+	 (*Selecte action type from HMI*)
+	5:
+ (********************************************************************************************************************************************************)
+(*Gestion des vérins																							*)
+(********************************************************************************************************************************************************)
+	(*Rentrée vérin*)
+ END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_CycleMan">
+      <LineId Id="3" Count="24" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

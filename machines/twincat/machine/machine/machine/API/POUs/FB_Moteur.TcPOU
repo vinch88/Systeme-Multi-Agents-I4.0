@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <POU Name="FB_Moteur" Id="{c2c97c00-92e1-48e6-ab83-9956cf4b0348}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Moteur
+VAR_INPUT
+	fbPower: MC_power;
+	fbMoveAbsolute: MC_MoveAbsolute;
+	fbHome: MC_Home;
+	fbReset: MC_Reset;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	
+END_VAR
+VAR_IN_OUT
+	fbAxe: AXIS_REF;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[fbPower(Axis:=fbAxe);
+fbMoveAbsolute(Axis:=fbAxe);
+fbHome(Axis:=fbAxe);
+fbReset(Axis:=fbAxe);]]></ST>
+    </Implementation>
+    <LineIds Name="FB_Moteur">
+      <LineId Id="12" Count="1" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

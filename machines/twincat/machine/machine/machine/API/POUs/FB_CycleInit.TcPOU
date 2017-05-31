@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <POU Name="FB_CycleInit" Id="{fb046531-5b29-4024-bc60-54a3546ea0c2}" SpecialFunc="None">
+    <Declaration><![CDATA[(**********************************************************************************************************************************************************************
+*{He-Arc}  {Hôtle de ville 7}   {2400 Le Locle}       Phone: ++ 0041 (0)32 930 13 13     Fax: ++ 0041 (0)32 930 13 14         Email: ingenierie@he-arc.ch
+*=======================================================================================================================
+* {Give the complete list of every blocks for a source file with several blocks}
+*
+*=======================================================================================================================
+*Description: Cutting station init cycle
+*
+*=======================================================================================================================
+*Version:        Date:               Author:                           Reason of modification:
+*1.0                   27.11.11         Fabien Golay              Initial Version 
+*1.1                                                                 
+*
+*
+************************************************************************************************************************************************************************)
+FUNCTION_BLOCK FB_CycleInit
+(**)
+VAR_INPUT
+	xStart			:BOOL; (*start input command*)
+	xReset			:BOOL; (*Reset input command*)
+END_VAR
+VAR_OUTPUT
+	xDone			:BOOL;(*Done output*)
+	xBusy				:BOOL;(*Busy output*)
+END_VAR
+
+VAR
+	iStep			: INT;		(* cycle step *)
+	fbTrigStart			: R_TRIG;	(*Trigger for start*)
+	fbTimer:TON;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Reset  if xReset is set to true*)
+IF xReset
+	THEN
+		xReset:=FALSE;
+		iStep:=0;
+		xDone:=FALSE;
+END_IF
+
+
+(********************************************************************************************************************)
+(*			Start cycle																 *)
+(*********************************************************************************************************************)
+fbTrigStart(clk:=xStart );
+
+
+CASE  iStep OF
+	 (* Activation du cycle*)
+	0:	IF fbTrigStart.Q
+		THEN
+			iStep:=50;
+			xDone:=FALSE;
+			stParam.stStatus.stCommon.xInitOk:=FALSE;
+		END_IF
+
+	50:	iStep:=100;
+	fbStation.fbAxeX.fbHome.HomingMode:=MC_Direct;
+	fbStation.fbAxeX.fbHome.Position:=0;
+
+(********************************************************************************************************************)
+(*				Init moteurs																		*)
+(********************************************************************************************************************)
+
+	(*monter les deux système de portique et fermer les iSteps*)
+	100: IF fbStation.fbAxeX.fbHome.Done
+		 THEN
+		 	iStep:=999;
+	END_IF
+	
+	 
+
+(***********************************************************************************)
+(*                           End of cycle                                                                                    *)
+(************************************************************************************)
+	999:xDone:=TRUE;
+			iStep:=0;
+
+END_CASE
+
+(********************************************************************************************************************************************************)
+(*Special Interrupt*)
+(********************************************************************************************************************************************************)
+
+fbTimer();
+
+(********************************************************************************************************************************************************)
+(*Status settings*)
+(********************************************************************************************************************************************************)
+
+xBusy:=(iStep<>0);
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_CycleInit">
+      <LineId Id="3" Count="23" />
+      <LineId Id="158" Count="1" />
+      <LineId Id="27" Count="6" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="153" Count="0" />
+      <LineId Id="155" Count="1" />
+      <LineId Id="76" Count="4" />
+      <LineId Id="157" Count="0" />
+      <LineId Id="81" Count="7" />
+      <LineId Id="96" Count="7" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

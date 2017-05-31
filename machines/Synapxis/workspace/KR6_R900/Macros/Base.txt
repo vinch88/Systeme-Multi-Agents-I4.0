@@ -1,0 +1,146 @@
+.MODULE_BEGIN Base
+
+.MODULE_VERSION 1.0
+
+.MODULE_DESCRIPTION
+
+.MODULE_PROGRAMS
+
+.PROGRAM BaseTransitionsAndMove
+
+.DESCRIPTION
+
+.INPUTS
+
+    string robotName
+    int moveId
+    string transitionName
+    locc locc
+    locj locj
+    real speedProgram, appro
+    bool straight
+
+.VARIABLES
+
+    int i
+    locj ready
+
+.RETURN_TYPE none
+
+.BODY
+//print("Start macro", robotName)
+if (!deviceAttach(robotName))
+    print("Attach failed:", robotName)
+    return
+end
+
+ensure(true)
+setSpeed(speedProgram)
+
+switch(moveId)
+    case 0 //MoveJ
+        movej(locj)
+    case 1 //MoveC
+        if (straight)
+            moves(locc, appro)
+        else
+            move(locc, appro)
+        end
+    case 2 //Transition
+        transitionMove(transitionName)
+    case 3 //Transition and moveJ
+        transitionMove(transitionName)
+        movej(locj)
+    case 4 //Transition and moveC
+        transitionMove(transitionName)
+        if (straight)
+            moves(locc, appro)
+        else
+            move(locc, appro)
+        end
+end
+
+deviceDetach(robotName)
+.END
+
+.PROGRAM BaseEnsure
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach(gRobotName)
+ensure(true)
+.END
+
+.PROGRAM BaseEstopOccurs
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE none
+
+.BODY
+print("EStop occurs")
+.END
+
+.PROGRAM BaseEstopAbort
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE none
+
+.BODY
+print("EStop abort")
+.END
+
+.PROGRAM BaseEstopRetry
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE bool
+
+.BODY
+print("EStop retry", clock())
+
+deviceSelect(gRobotName)
+while (!power(true))
+    if (alert("Impossible de remettre sous puissance", "Vérifier la chaine d'arret d'urgence", "Ok", "Annuler"))
+        return false
+    end
+end
+
+if(!hasPower())
+    return false
+end
+
+return (alert("Reprise du cycle ?", "", "Ok", "Annuler") == 0)
+ 
+.END
+
+.MODULE_GLOBAL_VARIABLES
+
+
+.MODULE_GLOBAL_CONSTANTS
+
+    real gConnectorWarnDist = 300
+    int gConnectorWarnSpeed = 15
+    string gRobotName = "Kuka", gMCPName = "MCP_Kuka"
+
+.MODULE_END

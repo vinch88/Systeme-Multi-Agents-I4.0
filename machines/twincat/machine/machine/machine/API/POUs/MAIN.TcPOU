@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <POU Name="MAIN" Id="{8bc51daa-5a89-48e9-a5c4-d77fc3d52b56}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[fbStation();
+
+GVL.stParam.stStatus.lrPositionMoteur:=GVL.axeX.NcToPlc.ActPos;
+
+GVL.stIO.stOut.xMotPosBasse:=GVL.axeX.NcToPlc.ActPos<=GVL.stParam.stRecipe.lrPositionBasse+0.01;
+
+GVL.stIO.stOut.xMotPosHaute:=GVL.axeX.NcToPlc.ActPos>=-0.01;]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="6" Count="3" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

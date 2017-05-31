@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <POU Name="FB_Btn" Id="{219ce889-16ba-497c-b7d0-df2e74ec6ee2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Btn
+VAR_INPUT
+ (*exemple : Btn                                                             :FB_BtnHmiType; (**)*)
+
+	HmiStart:			FB_BtnHmiAutoResetType; (*Start button*)
+	HmiStop:			FB_BtnHmiAutoResetType; (*Stop button*)
+	HmiReset:			FB_BtnHmiAutoResetType;
+	ResetAllHoming:		FB_BtnHmiAutoResetType;
+	Init:				FB_BtnHmiAutoResetType; (*Start button*)
+	Man:				FB_BtnHmiAutoResetType; (*Stop button*)
+	Auto:				FB_BtnHmiAutoResetType; (*Reset button*)
+//	Step:				FB_BtnHmiAutoResetType; (*Set step by step mode*)
+
+
+
+
+(************************************************************************************)
+(*      Boutons du mode manuel                                                                                *)
+(************************************************************************************)
+
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[HmiStart();
+HmiStop();(**)
+HmiReset();(**)
+ResetAllHoming();
+Init();
+Auto();
+Man();
+//Step(); (**)
+	
+
+
+
+
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_Btn">
+      <LineId Id="3" Count="9" />
+      <LineId Id="15" Count="1" />
+      <LineId Id="35" Count="1" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

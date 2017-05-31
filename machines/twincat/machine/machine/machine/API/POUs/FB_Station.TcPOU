@@ -1,0 +1,191 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <POU Name="FB_Station" Id="{a0e4637d-4d71-42e6-ad5f-4b6b033625a2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Station
+VAR_INPUT
+	(*Objets*)
+	
+	
+	(*Function block for cycle*)
+	fbCycleMain:FB_CycleMain;
+	fbCycleInit:FB_CycleInit;
+	fbCycleMan:FB_CycleMan;
+	fbCycleAuto:FB_CycleAuto;
+	
+	fbAxeX: FB_Moteur;
+	
+	
+	(*Function blockfor small HMI button*)
+	fbBtn:FB_Btn;	(*station Input and ouput*)
+
+	(*Error management*)
+//	fbErrorAdmin		:FB_ErrorAdmin;	(*FUNCTION block for error administration  *)
+	
+	
+	
+END_VAR
+VAR_OUTPUT
+
+END_VAR
+VAR
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//fbErrorAdmin.mResetIndex();
+(************************************************************************************)
+(*							Refresh cycle			 *)
+(************************************************************************************)
+ACT_Cycle();
+ACT_Refresh();
+//fbIO();
+fbBtn();
+
+fbCycleMain();
+
+ACT_ActionActionneur();
+
+
+
+]]></ST>
+    </Implementation>
+    <Action Name="ACT_ActionActionneur" Id="{1bc968e5-953b-4c83-84e1-c195aa47625d}">
+      <Implementation>
+        <ST><![CDATA[fbAxeX.fbHome.Execute:=fbStation.fbCycleInit.iStep=100;
+fbAxeX.fbReset.Execute:=fbStation.fbCycleMain.iStep=820;
+fbAxeX.fbMoveAbsolute.Execute:=fbStation.fbCycleAuto.iStep=200 OR fbStation.fbCycleAuto.iStep=300;
+fbAxeX(fbAxe:=GVL.axeX);
+fbAxeX.fbPower.Enable:=GVL.stIO.stOut.xMotEnable;
+fbAxeX.fbPower.Enable_Negative:=TRUE;
+fbAxeX.fbPower.Enable_Positive:=TRUE;]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="ACT_Cycle" Id="{62e5ac89-e2f9-4064-9ce4-9ff78eeef780}">
+      <Implementation>
+        <ST><![CDATA[
+
+(*Start cycle in mode*)
+fbCycleInit.xStart:=fbStation.fbCycleMain.iStep=150;
+
+fbCycleMan.xStart:=fbStation.fbCycleMain.iStep=200;
+
+fbCycleAuto.xStart:=fbStation.fbCycleMain.iStep=305;
+//fbCycleAuto.xStopCmdPin:=fbStation.fbCycleMain.iStep=390  OR fbStation.fbCycleMain.iStep=800;
+
+
+fbCycleInit( );
+fbCycleMan(  );
+fbCycleAuto( );
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="ACT_Refresh" Id="{44eb58a0-ad1c-4fc8-b334-68d533fb9ec7}">
+      <Implementation>
+        <ST><![CDATA[	
+
+
+	(*"POWER OFF": IF motor power AND pneumatic are "OFF" (Emergency stop)
+	IF this machine is selected AND power Off, it correspond TO an alarm. Red is OK.
+	IF this machine isn't selected and power Off, it must be white.*)
+	//stParam.stStatus.stCommon.xPowerOff:=fbStation.fbIO.In.IxEstopBtnOnly;
+
+	(*"POWERING": Transition mode
+	IF the machines are powering but without alarms OR warnings, they can blink in light blue.
+	IF the machines are powering but with warning, they can blink in yellow.
+	IF the machines are powering but with alarms, they can blink in red.*)
+	stParam.stStatus.stCommon.xPowering:=FALSE;
+
+	(*"POWER ON": Motor power "ON", pneumatic "ON"
+	IF the machines are power On but without alarms OR warnings, they can be light blue.
+	IF the machines are power On but with warning, they can be yellow.
+	IF the machines are power On but with alarms, they can be red.*)
+	//stParam.stStatus.stCommon.xPowerOn:=NOT fbStation.fbIO.In.IxEstopBtnOnly;
+
+	(*"INITIALISING": Transition mode, INIT cycle
+	IF the machines are initializing but without alarms OR warnings, they can blink in green.
+	IF the machines are initializing but with warning, they can blink in yellow.
+	IF the machines are initializing but with alarms, they can blink in red.*)
+	stParam.stStatus.stCommon.xInitializing:=fbStation.fbCycleMain.iStep>100 AND fbStation.fbCycleMain.iStep<199;
+
+	
+
+	(*"RUNNING": running in AUTO mode
+	IF the machines are running but without alarms OR warnings, they can blink in green.
+	IF the machines are running but with warning, they can blink in yellow.
+	IF the machines are running but with alarms, they can blink in red (NOT possible).*)
+	stParam.stStatus.stCommon.xRunning:= fbStation.fbCycleAuto.xBusy
+										OR fbStation.fbCycleInit.xBusy OR fbStation.fbCycleMan.iStep>5;
+										
+	stParam.stStatus.stCommon.xReady:=NOT stParam.stStatus.stCommon.xRunning
+								 AND stParam.stStatus.stCommon.xPowerOn
+								AND stParam.stStatus.iNiveauUtilisateur>0;
+								 
+	(*"STOPPING": Normally stopping  in AUTO mode
+	IF the machines are stopping but without alarms OR warnings, they can blink in green.
+	IF the machines are stopping but with warning, they can blink in yellow.
+	IF the machines are stopping but with alarms, they can blink in red (NOT possible).*)
+	stParam.stStatus.stCommon.xStoping:=fbStation.fbCycleMain.iStep=390  OR fbStation.fbCycleMain.iStep=800;
+
+	(*"RESETING": Reset cycle operation, can be DO in every situation AND mode
+	IF the machines are stopping but without alarms OR warnings, they can blink in green.
+	IF the machines are stopping but with warning, they can blink in yellow.
+	IF the machines are stopping but with alarms, they can blink in red.*)
+	stParam.stStatus.stCommon.xReseting:=fbStation.fbCycleMain.xReseting;
+
+
+IF stParam.stStatus.stCommon.xRunning
+		THEN
+		 IF stParam.stStatus.stCommon.xWaitStartNextStep 
+			 THEN
+			 	stParam.stStatus.sMessageHmiStatus:='SETP BY STEP';
+			 ELSE
+				stParam.stStatus.sMessageHmiStatus:='RUN';
+		END_IF
+		ELSE
+			stParam.stStatus.sMessageHmiStatus:='READY';
+END_IF
+
+stParam.stStatus.xNiveau1:=stParam.stStatus.iNiveauUtilisateur>0;
+stParam.stStatus.xNiveau2:=stParam.stStatus.iNiveauUtilisateur>1;
+stParam.stStatus.xNiveau3:=stParam.stStatus.iNiveauUtilisateur>2;
+stParam.stStatus.xNiveau4:=stParam.stStatus.iNiveauUtilisateur>3;
+
+//Visibilité/invisibilité des boutons de quittance:
+(*
+stParam.stStatus.xBtnQuittanceBal1Visible:=	fbStation.fbCycleBalance1.iStep=802
+												OR fbStation.fbCycleBalance1.iStep=842
+												OR fbStation.fbCycleVerifEtatStation.iStep=160;
+stParam.stStatus.xBtnQuittanceBal2Visible:=	fbStation.fbCycleBalance2.iStep=804	
+												OR fbStation.fbCycleBalance2.iStep=844
+												OR fbStation.fbCycleVerifEtatStation.iStep=210;
+stParam.stStatus.xBtnQuittanceUsiVisible:=	fbStation.fbCycleUsinage.iStep=812
+												OR fbStation.fbCycleVerifEtatStation.iStep=260;
+*)
+
+
+
+]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="FB_Station">
+      <LineId Id="3" Count="12" />
+      <LineId Id="167" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station.ACT_ActionActionneur">
+      <LineId Id="300" Count="5" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station.ACT_Cycle">
+      <LineId Id="2" Count="9" />
+      <LineId Id="21" Count="3" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Station.ACT_Refresh">
+      <LineId Id="2" Count="32" />
+      <LineId Id="37" Count="49" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

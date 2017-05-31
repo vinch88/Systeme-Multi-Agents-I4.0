@@ -1,0 +1,194 @@
+.MODULE_BEGIN Palettisation
+
+.MODULE_VERSION 1.0
+
+.MODULE_DESCRIPTION
+
+.MODULE_PROGRAMS
+
+.PROGRAM InitJetonsPosition
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    INT i, n
+    STRING paletName
+    LOCC pos
+    STRING child
+
+.RETURN_TYPE NONE
+
+.BODY
+n = 40
+gSrcParent = "Jetons"
+gSrcDestParent = "Labo_RX90_CS8/ASM_FRAME"
+paletName = "Palette"
+for (i = (n-1); i >= 0; i-=1)
+    pos = machinePaletPosition(paletName, i)+trans(0,0,0,0)
+    child = "Jetons/Jeton_"+(i+1)
+    simObjectSetLink(child, gSrcParent, false)
+    simObjectSetLink(child, gSrcDestParent, true)
+    simObjectSetPosition(child, gSrcDestParent, pos)
+    delay(0.008)
+end
+
+.END
+
+.PROGRAM TestPaletisation
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    INT i, n
+    STRING paletName
+    LOCC posPalette, positionDepose
+    REAL approchDist = 120, numeroJeton
+
+.RETURN_TYPE NONE
+
+.BODY
+deviceAttach()
+setTool(machineTool("Pointe"))
+//print(tool())
+//print(herej())
+ensure(true)
+
+n = 40
+
+gSrcChild = "Jetons"
+gSrcDestParent = "Labo_RX90_CS8/ASM_TOOL"
+
+paletName = "Palette"
+
+for (i = gPaletStartIndex; i < n; i+=1)
+    gSrcChild = "Jetons/Jeton_"+(i+1)
+    gSrcDestParent = "Labo_RX90_CS8/ASM_FRAME"
+    //  charge palette
+    movej(machineVar("approch_Palette"))    // approche zone palette+
+    posPalette = machinePaletPosition(paletName, i)
+    move(posPalette,100)                    // approche position palette
+    moves(posPalette,0)
+    // io vaccum
+    VacuumEnable(true)
+    moves(posPalette,100)                
+    movej(machineVar("approch_Palette"))    // approche zone palette
+    // empilage
+    movej(gApproch_Pile)                    // approche zone pile
+    positionDepose = machineVar("frame_Empilage")
+    numeroJeton=i+1
+    positionDepose += trans(0,0,numeroJeton*gHauteurJeton,0,0,0)
+    move(positionDepose, approchDist)
+    moves(positionDepose)
+    //Vacuum off
+    VacuumEnable(false)
+    moves(positionDepose, approchDist)
+    movej(gApproch_Pile)                    // approche zone pile
+    //
+    if (!gRun) 
+        gPaletStartIndex = i+1
+        exit
+    end
+end
+.END
+
+.PROGRAM PaletteStart
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE NONE
+
+.BODY
+if (!taskExists(gPaletteTaskName))
+    gRun = true
+    taskExecute TestPaletisation(), gPaletteTaskName
+end
+.END
+
+.PROGRAM PaletteStop
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE NONE
+
+.BODY
+gRun = false
+.END
+
+.PROGRAM PaletteReset
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE NONE
+
+.BODY
+if (taskExists(gPaletteTaskName))
+    alert("Reset impossible", "Impossible de reseter pendant que la tache est active")
+else
+    InitJetonsPosition()
+    gPaletStartIndex = 0
+end
+
+
+.END
+
+.PROGRAM VacuumEnable
+
+.DESCRIPTION
+
+.INPUTS
+
+    BOOL state
+
+.VARIABLES
+
+.RETURN_TYPE NONE
+
+.BODY
+if(state)
+    simObjectSetLink(gSrcChild, gSrcDestParent, false)
+    gSrcDestParent = "Labo_RX90_CS8/ASM_TOOL"
+    simObjectSetLink(gSrcChild, gSrcDestParent, true)
+else
+    gSrcDestParent = "Labo_RX90_CS8/ASM_FRAME"
+    gSrcDestParent = "Labo_RX90_CS8/ASM_TOOL"
+    simObjectSetLink(gSrcChild, gSrcDestParent, false)
+    gSrcDestParent = "Labo_RX90_CS8/ASM_FRAME"
+    simObjectSetLink(gSrcChild, gSrcDestParent, true)
+end 
+
+
+
+
+.END
+
+.MODULE_GLOBAL_VARIABLES
+
+    INT gPaletStartIndex
+    BOOL gRun
+    STRING gSrcParent, gSrcChild, gSrcDestParent
+
+.MODULE_GLOBAL_CONSTANTS
+
+    LOCJ gApproch_Pile = {69.927, -1.3366, 76.6611, 2.9122, 68.9024, 176.8078}
+    REAL gHauteurJeton = -2
+    STRING gPaletteTaskName = "paletteTask"
+
+.MODULE_END

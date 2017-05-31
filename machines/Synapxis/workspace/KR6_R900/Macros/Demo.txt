@@ -1,0 +1,116 @@
+.MODULE_BEGIN Demo
+
+.MODULE_VERSION 1.0
+
+.MODULE_DESCRIPTION
+
+.MODULE_PROGRAMS
+
+.PROGRAM DemoMove
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE none
+
+.BODY
+
+deviceAttach()
+
+
+repeat(3)
+    setSpeed(89)
+    transitionMove("Ready")
+    
+    setSpeed(34)
+
+    transitionMove("ApprocheChargeCibleZone")
+
+    setSpeed(18)
+    transitionMove("Start")
+end
+.END
+
+.PROGRAM DemoMove2
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locc pos
+
+.RETURN_TYPE none
+
+.BODY
+
+deviceAttach()
+setTool(poTool)
+
+
+repeat(3)
+    setSpeed(89)
+    transitionMove("Ready")
+    
+    setSpeed(34)
+
+    transitionMove("VidagePrehenseur")
+
+    pos = here()
+    setSpeed(74)
+
+    moves(pos+trans(0,0,0,0,0,-135))
+    moves(pos)
+    transitionReach("VidagePrehenseur")
+
+end
+.END
+
+.PROGRAM DemoMoveTraj
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locc pos
+
+.RETURN_TYPE none
+
+.BODY
+
+deviceAttach()
+setTool(poTool)
+
+
+repeat(3)
+    setSpeed(89)
+    transitionMove("Ready")
+    
+    setSpeed(34)
+
+    transitionMove("VidagePrehenseur")
+
+    pos = here()
+//    setSpeed(4)
+
+    reactiReset(1)
+    delay(8)
+
+    transitionReach("VidagePrehenseur")
+
+end
+.END
+
+.MODULE_GLOBAL_VARIABLES
+
+
+.MODULE_GLOBAL_CONSTANTS
+
+
+.MODULE_END

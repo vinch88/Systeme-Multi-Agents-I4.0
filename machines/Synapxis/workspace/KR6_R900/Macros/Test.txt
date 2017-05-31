@@ -1,0 +1,310 @@
+.MODULE_BEGIN Test
+
+.MODULE_VERSION 1.0
+
+.MODULE_DESCRIPTION
+
+.MODULE_PROGRAMS
+
+.PROGRAM TestA
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locj lj1 = {33.6914, -81.9082, 96.7251, 1.65e-02, 75.2080000, 213.6884000}, lj2 = {-33.6914, -81.9082, 96.7251, 1.65e-02, 75.2080000, 213.6884000}
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach()
+print(remoteMode(), manualMode())
+print(herej())
+print(here())
+.END
+
+.PROGRAM TestB
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locj lj1 = {33.6914, -81.9082, 96.7251, 1.65e-02, 75.2080000, 0.0000000}, lj2 = {-33.6914, -81.9082, 96.7251, 1.65e-02, 75.2080000, 213.6884000}
+    real dt = 2
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach()
+
+while(true)
+//    delay(dt)
+    print(clock())
+    movej(lj1)
+    print(clock())
+//    delay(dt)
+    movej(lj2)
+end
+.END
+
+.PROGRAM TestA2
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locj lj1 = {33.6914, -81.9082, 96.7251, 1.65e-02, 75.2080000, 213.6884000}, lj2 = {-33.6914, -81.9082, 96.7251, 1.65e-02, 75.2080000, 213.6884000}
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach()
+//print(remoteMode(), manualMode())
+//print(herej())
+print(here())
+
+setTool(trans(0, 0,100))
+print(tool())
+.END
+
+.PROGRAM TestB2
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locj lj1 = {33.6914, -81.9082, 96.7251, 1.65e-02, 75.2080000, 0.0000000}, lj2 = {-33.6914, -81.9082, 96.7251, 1.65e-02, 75.2080000, 0.0000000}
+    real dt = 2
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach()
+
+//repeat(1)
+//waitEndMove()
+//print("ok", clock())
+//end
+//return
+
+repeat(100)
+print("start")
+movej(lj1)
+movej(lj2)
+print("end")
+end
+
+.END
+
+.PROGRAM MoveA
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locc pos
+    int i, n
+    real appro = 100
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach()
+
+setTool(gTool)
+//movej(gStart)
+
+
+pos = gFrame
+
+n = 6
+gRun = true
+
+while(gRun)
+movej(gStart)
+
+for (i = 0; i < n; i+=1)
+    pos = gFrame+trans(-i*10)
+    move(pos, appro)
+    moves(pos)
+    moves(pos, appro)
+end
+
+movej(gPoste1)
+
+end
+
+movej(gStart)
+
+.END
+
+.PROGRAM MoveB
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locc pos
+    int i, n
+    real appro = 100
+
+.RETURN_TYPE none
+
+.BODY
+deviceAttach()
+movej(gStart)
+movej(gStart)
+movej(gStart)
+movej(gStart)
+
+
+
+.END
+
+.PROGRAM InitRobot
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locc a
+    locj j = {0, -90, 90, 0, 0, 0}
+
+.RETURN_TYPE none
+
+.BODY
+
+deviceAttach()
+
+
+ensure(true) // mise en puissance
+
+setTool(machineTool("Pointe"))
+
+setSpeed(10)
+
+movej(gjHome)
+.END
+
+.PROGRAM testC
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE none
+
+.BODY
+InitRobot()
+movej(gStart)
+//movej(gPoste1)
+move(gFrame)
+
+moves(gFrame, 250)
+
+move(gFrame)
+
+move(machineFrame("PlanA")+trans(0,0,0,180,12,0))
+
+
+.END
+
+.PROGRAM Serveur
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    string message
+
+.RETURN_TYPE none
+
+.BODY
+
+
+if(!tcpConnect(device))
+    print("erreur connexion")
+    return
+end
+
+
+
+while(true)
+    if(tcpPopMessage(device, message))
+        print("message: " + message)
+        //traitement
+        //renvoi des données
+        if(!tcpSend(device, message))
+            print(message)
+            exit
+        end
+    end
+end
+
+if(tcpDisconnect(device))
+    print("deconnexion réussie")
+    return
+else
+    print("problème de déconnexion")
+end
+.END
+
+.PROGRAM Startup
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE none
+
+.BODY
+TaskExecute Serveur(), "serveur"
+.END
+
+.PROGRAM Shutdown
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE none
+
+.BODY
+taskStop("serveur")
+.END
+
+.MODULE_GLOBAL_VARIABLES
+
+    bool gRun
+
+.MODULE_GLOBAL_CONSTANTS
+
+    locj gStart = {-33.6896, -81.9056, 96.7266, 1.43e-02, 50.0000000, 2.5e-03}
+    locc gFrame = {450.041, 299.97, 300, 179.972, -1.6e-02, 146.3040000}, gTool = {0, 0, 100, -0, 0, -0}
+    locj gPoste1 = {33, -120, 30, 1.54e-02, 62.4996000, -1.2e-03}, gjHome = {0, -90, 90, 0, 0, 0}
+    string device = "robot_serveur"
+    locc gpos = {423.63, 0, 577.224, -180, -3.946, -180}
+
+.MODULE_END

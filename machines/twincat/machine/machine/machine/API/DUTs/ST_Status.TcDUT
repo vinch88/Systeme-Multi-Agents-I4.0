@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <DUT Name="ST_Status" Id="{fc469075-c59a-466b-8475-90fe6c03a535}">
+    <Declaration><![CDATA[TYPE ST_Status :
+STRUCT
+	(*Common*)
+	stCommon:ST_GenericStatus;	(*Common*)
+
+	(*Activation from HMI*)
+	inJogSelectCylinder:INT;(**)
+	inJogSelectMotor: INT;
+	iNiveauUtilisateur:INT;
+	sUserName:STRING[100]:='';//user name from HMI
+	
+	iCounterPiecesProduites: INT;                             (*Nombre de pièces produites (=nombre de pièces triées)*)
+	iCounterPiecesBonnes: INT;
+	iCounterPiecesMauvaises: INT;
+	iCounterLaser:DINT;//compteur de cycle laser limite à 4'000'000
+	diCounterError:DINT;
+	//sMessageHmi: STRING(200);
+	sMessageHmiStatus: STRING(50);	
+	sBatchNo:STRING[50];
+	
+	//indique le niveau, vrai si plus gand ou égale
+	xNiveau1:BOOL;
+	xNiveau2:BOOL;
+	xNiveau3:BOOL;
+	xNiveau4:BOOL;
+	
+	lrPositionMoteur: LREAL;
+	
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

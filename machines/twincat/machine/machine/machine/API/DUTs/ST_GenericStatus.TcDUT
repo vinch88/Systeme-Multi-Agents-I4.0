@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <DUT Name="ST_GenericStatus" Id="{da84e6f2-0ec3-4ab5-8a77-1185c08130a3}">
+    <Declaration><![CDATA[TYPE ST_GenericStatus :
+STRUCT
+	(*-------------------------------------------------------------------------------------------------
+		xuton du panel HMI
+	-------------------------------------------------------------------------------------------------*)
+	(*mode actif plc to HMI*)
+	xModeInit					:BOOL; (*selection du mode prise origine machine type flanc*)
+	
+
+	xModeAuto				:BOOL; (*selection du mode automatique type flanc*)
+	xModeMan				:BOOL; (*selection du mode manuel type flanc*)
+	xModeStep				:BOOL; (*selection du mode pas à pas type flanc*)
+	
+	xWaitStartNextStep:BOOL;
+
+	iNcStatus				:DINT;					(*status NC*)
+	iOverride:DINT;
+	(*-------------------------------------------------------------------------------------------------
+		Machine global state
+	-------------------------------------------------------------------------------------------------*)
+
+	(*boReadyForPower			: BOOL;					(* Condition machine prête pour faire un power on des axes*)*)
+	xInitOk:BOOL;
+
+
+	xPowerOff:BOOL;(*"POWER OFF": IF motor power AND pneumatic are "OFF" (Emergency stop)*)
+
+	xPowering:BOOL;(*"POWERING": Transition mode*)
+
+	xPowerOn:BOOL;(*"POWER ON": Motor power "ON", pneumatic "ON"*)
+
+	xInitializing:BOOL;(*"INITIALISING": Transition mode, INIT cycle*)
+
+	xReady:BOOL;(*"READY": Ready FOR AUTO mode Green*)
+
+	xRunning:BOOL;(*"RUNNING": running in AUTO mode*)
+
+	xStoping:BOOL;(*"STOPPING": Normally stopping  in AUTO mode*)
+
+	xReseting:BOOL;(*"RESETING": Reset cycle operation, can be DO in every situation AND mode*)
+
+	(*Status light*)
+	byStatusLight:BYTE; (*bit0=1 red light, bit1=1 red light blink, bit2=1 yelow, bit3=1 yelow blink, bit4=1 green, bit5=1 green blink*)
+
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

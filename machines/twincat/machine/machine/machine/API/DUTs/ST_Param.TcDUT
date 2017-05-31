@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <DUT Name="ST_Param" Id="{85259b04-8de1-4e62-80d5-fa57072f4338}">
+    <Declaration><![CDATA[TYPE ST_Param :
+STRUCT
+	
+	(*NOVRAM (Non-Volatile Random Access Memory) persistent variables *)
+	(*Parameters*)
+	stStatus		:ST_Status;	(*Machine global status structure ~(OPC :1:)*)
+	stMachine		:ST_MachineParam ;	(*Machine parameters structure editing from HMI ~(OPC :1:)*)
+	stRecipe		:ST_RecipeParam;	(*Recipe parameters structure editing from HMI ~(OPC :1:)*)
+	//stReporting		:ST_Reporting;
+	
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

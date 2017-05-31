@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <DUT Name="ST_Out" Id="{142921be-7fc3-4507-a58d-92ffaa64a524}">
+    <Declaration><![CDATA[TYPE ST_Out :
+STRUCT
+	xMotEnable: BOOL;
+	xMotPosBasse: BOOL;
+	xMotPosHaute: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

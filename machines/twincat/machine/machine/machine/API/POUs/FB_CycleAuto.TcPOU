@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <POU Name="FB_CycleAuto" Id="{276925a8-9c19-4dad-9bb7-674fd1b013cf}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_CycleAuto
+(**)
+VAR_INPUT
+	xStart			:BOOL; (*start input command*)
+	//xStopCmdPin			:BOOL; (*stop input command*)
+	xReset			:BOOL; (*Reset input command*)
+		(*Station index*)
+	
+END_VAR
+VAR_OUTPUT
+	xDone			:BOOL;(*Done output*)
+	xBusy				:BOOL;(*Busy output*)
+END_VAR
+VAR_IN_OUT
+	//fbErrorAdmin:FB_ErrorAdmin;
+END_VAR
+VAR
+	
+
+	iStep			: INT;		(* cycle step *)
+	iNextStep			: INT;		(* cycle step *)
+	fbTrigStart			: R_Trig;	(*Trigger for start*)
+	fbTimerTON			:TON;
+	
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Reset  if xReset is set to true*)
+IF xReset
+	THEN
+		xReset:=FALSE;
+		iStep:=0;
+		xDone:=FALSE;
+END_IF
+
+fbTrigStart(CLK:=xStart);
+
+
+CASE  iStep OF
+	0:	IF fbTrigStart.Q
+		THEN
+		xDone:=FALSE;
+		iStep:=100;
+		END_IF
+	
+	100: fbStation.fbAxeX.fbMoveAbsolute.Position:=GVL.stParam.stRecipe.lrPositionBasse;
+			fbStation.fbAxeX.fbMoveAbsolute.Velocity:=GVL.stParam.stRecipe.lrVitesse;
+			iStep:=200;
+			
+	200: IF  fbStation.fbAxeX.fbMoveAbsolute.Done
+		THEN
+			iStep:=250;
+	END_IF
+	
+	250:  fbStation.fbAxeX.fbMoveAbsolute.Position:=0;
+			fbStation.fbAxeX.fbMoveAbsolute.Velocity:=GVL.stParam.stRecipe.lrVitesse;
+			iStep:=300;
+			
+	300: IF  fbStation.fbAxeX.fbMoveAbsolute.Done
+		THEN
+			iStep:=900;
+	END_IF
+
+	900: xDone:=TRUE;
+		iStep:=0;
+
+END_CASE
+
+fbTimerTON(IN:=iStep=210);
+xBusy:=iStep<>0;
+		
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_CycleAuto">
+      <LineId Id="3" Count="4" />
+      <LineId Id="9" Count="8" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="19" Count="2" />
+      <LineId Id="161" Count="1" />
+      <LineId Id="164" Count="2" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="167" Count="0" />
+      <LineId Id="169" Count="8" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="178" Count="1" />
+      <LineId Id="126" Count="5" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

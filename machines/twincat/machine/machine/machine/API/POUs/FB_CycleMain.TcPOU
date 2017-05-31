@@ -1,0 +1,299 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4020.12">
+  <POU Name="FB_CycleMain" Id="{d147dbe1-9993-461c-a9dd-4fe3a6c2022e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_CycleMain
+(**)
+VAR_INPUT
+
+END_VAR
+VAR_OUTPUT
+	xBusy				:BOOL;(*Busy output*)
+	xReseting:BOOL;(*reseting mode*)
+	xReadyForChangingMode:bool;
+	xEStopOut:BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+	iStep			: INT:=0;		(* cycle step *)
+	inOldStep			:INT:=0;
+	fbTrigStart			: R_Trig;	(*Trigger for start*)
+	
+	xMemCycleAutoRun:BOOL;
+	
+	fbTimer:TON;
+	fbTimerResetAuto:ton;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+ACT_ChangingMode();
+
+
+IF fbStation.fbBtn.HmiReset.xRisingEdge AND iStep<800
+	THEN
+		iStep:=800;
+END_IF
+
+CASE  iStep OF
+
+	(********************************************************************************************************************************************************)
+	(*Plc Start*)
+	(********************************************************************************************************************************************************)
+	0:	(*Init*)
+		iStep:=50;
+	
+		
+	(*Select mode*)
+	50:(*Wait end of cycle man init auto*)
+		//boEndOfProdPout:=FALSE;
+		IF xReadyForChangingMode
+			THEN
+				iStep:=55;
+		END_IF
+		
+	55:	(*Changing mode from HMI*)
+		(*Select  Mode*)
+		IF  stParam.stStatus.stCommon.xModeInit
+			THEN
+				iStep:=100; (*Init mode*)
+		END_IF
+		IF stParam.stStatus.stCommon.xModeMan 
+			THEN
+				iStep:=200; (*Manual mode*)
+		END_IF
+		IF stParam.stStatus.stCommon.xModeAuto
+			THEN
+					iStep:=300;(*Auto mode*)
+		END_IF
+
+	(************************************************************************************)
+	(*							INIT mode						 *)
+	(************************************************************************************)
+	(*Wait for start cycle or changing mode*)
+	100:
+		IF NOT stParam.stStatus.stCommon.xModeInit
+			THEN
+				iStep:=50;(*select mode*)
+			ELSE
+				(*Start init*)
+				IF (fbStation.fbBtn.HmiStart.xRisingEdge)
+					THEN
+						iStep:=150;
+				END_IF
+		END_IF
+
+	150:(*Exit on normal end*)
+		IF fbStation.fbCycleInit.xDone
+			THEN
+				iStep:=190;
+		END_IF
+		(*Exit on reset*);
+		(*Exit with error level 2*)
+	(*End of INIT mode*)
+	190:
+		//changement de mode automatique AUTO
+		iStep:=50;
+
+	(************************************************************************************)
+	(*							MAN mode						 *)
+	(************************************************************************************)
+	(*changing mode*)
+	200:
+		IF NOT stParam.stStatus.stCommon.xModeMan 
+			THEN
+				(*select mode*)
+				iStep:=290;
+		END_IF
+	290:(*	stParam.stStatus.dsMotPortiqueM1.xKillMotor:=FALSE;
+		stParam.stStatus.dsMotPortiqueM2.xKillMotor:=FALSE;
+		stParam.stStatus.dsMotPump.xKillMotor:=FALSE;*)
+		IF NOT fbStation.fbCycleMan.xBusy
+				THEN
+					iStep:=50;
+		END_IF
+		
+
+	(************************************************************************************)
+	(*							AUTO mode						 *)
+	(************************************************************************************)
+	(*changing mode*)
+	300:
+		IF NOT stParam.stStatus.stCommon.xModeAuto
+			THEN
+				iStep:=50;(*select mode*)
+			ELSE
+				//Start cycle auto normal
+				IF (fbStation.fbBtn.HmiStart.xRisingEdge)
+					THEN
+						iStep:=305;
+				END_IF
+		END_IF
+	
+	305: IF NOT fbStation.fbCycleAuto.xDone
+		THEN
+			iStep:=310;
+	END_IF	
+		
+	(*Control*)
+	310:IF fbStation.fbCycleAuto.xDone
+		THEN
+			GVL.stParam.stStatus.iCounterPiecesProduites:=GVL.stParam.stStatus.iCounterPiecesProduites+1;
+			iStep:=300;
+	END_IF
+
+	(************************************************************************************)
+	(*							Resetting mode					 *)
+	(************************************************************************************)
+	800:(*IF NOT fbStation.fbCycleAuto.xBusy OR fbTimerResetAuto.Q
+			THEN
+				iStep:=805;
+		END_IF*)
+		fbStation.fbCycleAuto.xReset:=TRUE;
+		fbStation.fbCycleInit.xReset:=TRUE;
+		fbStation.fbCycleMan.xReset:=TRUE;
+		GVL.stIO.stOut.xMotEnable:=FALSE;
+		iStep:=810;
+		
+	
+	810:IF NOT fbStation.fbCycleInit.xBusy
+		AND NOT fbStation.fbCycleMan.xBusy
+		AND NOT fbStation.fbCycleAuto.xBusy
+		THEN
+			iStep:=820;
+		END_IF
+		
+	820: IF fbStation.fbAxeX.fbReset.Done
+		 THEN
+		 	iStep:=830;
+	END_IF
+	
+	830: GVL.stIO.stOut.xMotEnable:=TRUE;
+		iStep:=50;
+
+END_CASE
+
+(********************************************************************************************************************************************************)
+(*Special Interrupt*)
+(********************************************************************************************************************************************************)
+
+
+
+
+fbTimer(IN:=iStep=20 OR iStep=807 OR iStep=809 OR iStep=841 );
+fbTimerResetAuto(IN:=iStep=800,pt:=T#1000MS);
+
+
+xBusy:=(iStep<>0);
+xReseting:=(iStep>799 AND iStep<900);
+
+
+
+xReadyForChangingMode:= (iStep=100 OR iStep=200 OR iStep=300 OR iStep=50 OR iStep=55)
+			AND NOT fbStation.fbCycleInit.xBusy
+			AND NOT fbStation.fbCycleAuto.xBusy;
+
+xEStopOut:= (iStep>899);
+
+
+(********************************************************************************************************************************************************)
+(*Status settings*)
+(********************************************************************************************************************************************************)
+
+xBusy:=(iStep<>0);
+xReseting:=(iStep>799 AND iStep<900);
+
+
+		
+]]></ST>
+    </Implementation>
+    <Action Name="ACT_ChangingMode" Id="{5b1c33eb-2707-446d-af82-1129bfdae70d}">
+      <Implementation>
+        <ST><![CDATA[(*********************************************************************************)
+(*			Changing mode														 *)
+(*********************************************************************************)
+IF (fbStation.fbBtn.Init.xRisingEdge 
+	) 
+	AND xReadyForChangingMode 
+	THEN
+		stParam.stStatus.stCommon.xModeInit:=TRUE;
+		stParam.stStatus.stCommon.xModeAuto:=FALSE;
+		stParam.stStatus.stCommon.xModeMan:=FALSE;
+END_IF
+
+IF fbStation.fbBtn.Auto.xRisingEdge 
+	AND xReadyForChangingMode
+ OR iStep=190 AND stParam.stStatus.stCommon.xInitOk
+	THEN
+		stParam.stStatus.stCommon.xModeInit:=FALSE;
+		stParam.stStatus.stCommon.xModeAuto:=TRUE;
+		stParam.stStatus.stCommon.xModeMan:=FALSE;
+END_IF
+
+IF fbStation.fbBtn.Man.xRisingEdge AND xReadyForChangingMode
+	THEN
+		stParam.stStatus.stCommon.xModeInit:=FALSE;
+		stParam.stStatus.stCommon.xModeAuto:=TRUE;
+		stParam.stStatus.stCommon.xModeMan:=FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="ACT_ForceInitAllAxe" Id="{d2688e4a-e9fa-48b5-b9eb-bd0a66ff5bca}">
+      <Implementation>
+        <ST><![CDATA[stParam.stStatus.stCommon.xInitOk:=FALSE;		]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="FB_CycleMain">
+      <LineId Id="7" Count="3" />
+      <LineId Id="410" Count="0" />
+      <LineId Id="412" Count="0" />
+      <LineId Id="421" Count="1" />
+      <LineId Id="411" Count="0" />
+      <LineId Id="30" Count="6" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="404" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="57" Count="5" />
+      <LineId Id="405" Count="0" />
+      <LineId Id="63" Count="29" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="101" Count="6" />
+      <LineId Id="109" Count="28" />
+      <LineId Id="139" Count="4" />
+      <LineId Id="145" Count="0" />
+      <LineId Id="147" Count="3" />
+      <LineId Id="441" Count="0" />
+      <LineId Id="437" Count="1" />
+      <LineId Id="440" Count="0" />
+      <LineId Id="151" Count="2" />
+      <LineId Id="406" Count="0" />
+      <LineId Id="409" Count="0" />
+      <LineId Id="408" Count="0" />
+      <LineId Id="407" Count="0" />
+      <LineId Id="163" Count="0" />
+      <LineId Id="218" Count="6" />
+      <LineId Id="423" Count="2" />
+      <LineId Id="436" Count="0" />
+      <LineId Id="426" Count="0" />
+      <LineId Id="231" Count="0" />
+      <LineId Id="233" Count="0" />
+      <LineId Id="240" Count="5" />
+      <LineId Id="427" Count="2" />
+      <LineId Id="431" Count="0" />
+      <LineId Id="430" Count="0" />
+      <LineId Id="432" Count="2" />
+      <LineId Id="324" Count="7" />
+      <LineId Id="338" Count="26" />
+      <LineId Id="373" Count="0" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CycleMain.ACT_ChangingMode">
+      <LineId Id="2" Count="25" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_CycleMain.ACT_ForceInitAllAxe">
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
