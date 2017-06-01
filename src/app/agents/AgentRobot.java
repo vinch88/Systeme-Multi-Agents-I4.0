@@ -3,10 +3,12 @@ package app.agents;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 import jade.core.Agent;
 import jade.domain.DFService;
@@ -20,7 +22,7 @@ public class AgentRobot extends Agent {
 		System.out.println("Démarrage de " + getLocalName());
 		// Make this agent terminate
 		// doDelete();
-		messageRobot = new String("");
+		messageFromRobot = "";
 
 		Object[] args = getArguments();
 		// panelConfig = (JPanelConfigurationMoulage) args[0];
@@ -31,7 +33,7 @@ public class AgentRobot extends Agent {
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		ServiceDescription sd = new ServiceDescription();
-		sd.setType("presse");
+		sd.setType("robot");
 		sd.setName(getLocalName());
 		dfd.addServices(sd);
 		try {
@@ -40,10 +42,49 @@ public class AgentRobot extends Agent {
 			fe.printStackTrace();
 		}
 
-		Boolean test = true;
-		while (test) {
-			connexionRobot();
+		// Test partie sale
+		// Boolean test = true;
+		// while (test) {
+		// initializeConnection();
+		// }
+
+		// Test partie correcte
+		try {
+			initializeConnection(InetAddress.getByName("localhost"), 1111);
+		} catch (UnknownHostException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
+
+		i = 0;
+		message = "";
+		test = true;
+		Thread t1 = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				while (test) {
+
+					try {
+						Thread.sleep(10000);
+						if (i % 2 == 0) {
+							message = "chargement";
+						} else {
+							message = "dechargement";
+						}
+						sendMessageToSynapxis(message);
+						if (i > 10)
+							test = false;
+						i++;
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+
+			}
+
+		});
+		t1.start();
 	}
 
 	protected void takeDown() {
@@ -69,46 +110,74 @@ public class AgentRobot extends Agent {
 	|*							Methodes Private						*|
 	\*------------------------------------------------------------------*/
 
-	private Boolean connexionRobot() {
+	// Version sale
+	// private Boolean initializeConnection() {
+	// System.out.println("Trying to connect to Synapxis");
+	// messageRobot = "chargement";
+	// DataInputStream userInput;
+	// PrintStream theOutputStream;
+	// try {
+	// InetAddress serveur = InetAddress.getByName("localhost");
+	// int port = 1111;
+	// Socket socket = new Socket(serveur, port);
+	// BufferedReader in = new BufferedReader(new
+	// InputStreamReader(socket.getInputStream()));
+	// PrintStream out = new PrintStream(socket.getOutputStream());
+	// out.print(messageRobot);
+	// System.out.println(in.readLine());
+	// } catch (Exception e) {
+	// e.printStackTrace();
+	// System.out.println("Fail connexion");
+	// }
+	//
+	// return true;
+	// }
+
+	private Boolean initializeConnection(InetAddress addr, int port) {
 		System.out.println("Trying to connect to Synapxis");
-		messageRobot = "chargement";
-		DataInputStream userInput;
-		PrintStream theOutputStream;
 		try {
-			InetAddress serveur = InetAddress.getByName("localhost");
-			int port = 1111;
-			Socket socket = new Socket(serveur, port);
-			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			PrintStream out = new PrintStream(socket.getOutputStream());
-			out.print(messageRobot);
-			System.out.println(in.readLine());
+			socket = new Socket(addr, port);
+			inputMessageFromRobot = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			outSendMessage = new PrintStream(socket.getOutputStream());
+			System.out.println("Connected to Synapxis");
+			return true;
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.out.println("Fail connexion");
+			System.out.println("Fail to connect to Synapxis");
+			return false;
 		}
 
-		return true;
+	}
+
+	private Boolean closeConnection() {
+		try {
+			socket.close();
+			System.out.println("Connection closed");
+			return true;
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println("Connection close failed");
+			return false;
+		}
+	}
+
+	private void sendMessageToSynapxis(String message) {
+		outSendMessage.println(message);
+		messageFromRobot = inputMessageFromRobot.toString();
+		System.out.println("FROM Synapxis: " + messageFromRobot);
 	}
 
 	/*------------------------------------------------------------------*\
 	|*							Attributs Private						*|
 	\*------------------------------------------------------------------*/
 
-	private String messageRobot;
+	private String messageFromRobot;
+	private Socket socket;
+	private PrintStream outSendMessage;
+	private BufferedReader inputMessageFromRobot;
 
-	// String sentence;
-	// String modifiedSentence;
-	// BufferedReader inFromUser = new BufferedReader(new
-	// InputStreamReader(System.in));
-	// Socket clientSocket = new Socket("localhost", 6789);
-	// DataOutputStream outToServer = new
-	// DataOutputStream(clientSocket.getOutputStream());
-	// BufferedReader inFromServer = new BufferedReader(new
-	// InputStreamReader(clientSocket.getInputStream()));
-	// sentence = inFromUser.readLine();
-	// outToServer.writeBytes(sentence + '\n');
-	// modifiedSentence = inFromServer.readLine();
-	// System.out.println("FROM SERVER: " + modifiedSentence);
-	// clientSocket.close();
+	private String message;
+	private int i;
+	private Boolean test;
 
 }
