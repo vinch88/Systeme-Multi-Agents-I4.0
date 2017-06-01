@@ -222,7 +222,7 @@ move(gFrame)
 
 move(machineFrame("PlanA")+trans(0,0,0,180,12,0))
 
-
+movej(gjHome)
 .END
 
 .PROGRAM Serveur
@@ -245,12 +245,21 @@ if(!tcpConnect(device))
     return
 end
 
-
+InitRobot()
 
 while(true)
     if(tcpPopMessage(device, message))
         print("message: " + message)
         //traitement
+        if(message == "chargement")
+            Chargement()
+            message = "chargement effectué"
+        end
+        if(message == "dechargement")
+            Dechargement()
+            message = "déchargement effectué"
+        end
+
         //renvoi des données
         if(!tcpSend(device, message))
             print(message)
@@ -293,6 +302,103 @@ TaskExecute Serveur(), "serveur"
 
 .BODY
 taskStop("serveur")
+.END
+
+.PROGRAM Chargement
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locj pos1 = {90, -90, 90, 0, 0, 0}, pos2 = {90, -60, 115, 0, 20, 0}, pos4 = {90, -90, 90, 0, 0, 0}, pos6 = {0, -30, 40, 0, 75, 0}
+
+.RETURN_TYPE none
+
+.BODY
+movej(pos1)
+
+setSpeed(4)
+
+movej(pos2)
+
+//Ramassage
+
+movej(pos4)
+
+setSpeed(10)
+
+movej(gjHome)
+
+setSpeed(4)
+
+movej(pos6)
+
+//Deposer
+
+movej(gjHome)
+
+setSpeed(10)
+
+.END
+
+.PROGRAM Dechargement
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+    locj pos1 = {-90, -90, 90, 0, 0, 0}, pos2 = {-90, -60, 115, 0, 20, 0}, pos4 = {-90, -90, 90, 0, 0, 0}, pos6 = {0, -30, 40, 0, 75, 0}
+
+.RETURN_TYPE none
+
+.BODY
+//Ramassage
+
+setSpeed(4)
+
+movej(pos6)
+
+movej(gjHome)
+
+setSpeed(10)
+
+movej(pos1)
+
+setSpeed(4)
+
+movej(pos2)
+
+//Deposer
+movej(pos4)
+
+setSpeed(10)
+
+movej(gjHome)
+
+setSpeed(10)
+
+.END
+
+.PROGRAM TestFullChaine
+
+.DESCRIPTION
+
+.INPUTS
+
+.VARIABLES
+
+.RETURN_TYPE none
+
+.BODY
+InitRobot()
+
+Chargement()
+
+Dechargement()
 .END
 
 .MODULE_GLOBAL_VARIABLES
