@@ -35,6 +35,10 @@ public class JPanelRobot extends JPanel {
 	|*				Set				*|
 	\*------------------------------*/
 
+	public void setStatut(String message) {
+		lblStatut.setText(message);
+	}
+
 	/*------------------------------*\
 	|*				Get				*|
 	\*------------------------------*/
@@ -53,8 +57,7 @@ public class JPanelRobot extends JPanel {
 
 	private void geometry() {
 
-		strStatut = new String("Programme non démarré");
-		lblStatut = new JLabel(strStatut);
+		lblStatut = new JLabel("Programme non démarré");
 		tfIP = new JTextField("localhost");
 		tfPort = new JTextField("1111");
 		btnDemarrerSynapxis = new JButton("Démarrer Synapxis");
@@ -140,7 +143,6 @@ public class JPanelRobot extends JPanel {
 	private JTextField tfIP;
 	private JTextField tfPort;
 	private JButton btnDemarrerSynapxis;
-	private String strStatut;
 	private JLabel lblStatut;
 
 }
