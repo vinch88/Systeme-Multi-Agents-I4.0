@@ -5,7 +5,9 @@ import java.util.LinkedList;
 
 import javax.swing.JPanel;
 
+import app.gui.JFrameCopyright;
 import app.gui.JFrameUI;
+import app.gui.JPanelRobot;
 import jade.core.Agent;
 import jade.core.ProfileImpl;
 import jade.core.Runtime;
@@ -23,7 +25,7 @@ public class GestionUsine extends Agent {
 	protected void setup() {
 
 		System.out.println("Démarrage de jade");
-		new JFrameUI(this);
+		new JFrameCopyright(this);
 
 		// Get a hold on JADE runtime
 		rt = Runtime.instance();
@@ -79,6 +81,24 @@ public class GestionUsine extends Agent {
 		try {
 
 			t1 = ac.createNewAgent(nomAgent, typeAgent, null);
+			// fire-up the agent
+			t1.start();
+			countAgent++;
+
+		} catch (StaleProxyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return t1;
+	}
+
+	public AgentController createAgent(String nomAgent, String typeAgent, JPanelRobot panelRobot) {
+
+		try {
+			Object[] args = new Object[3];
+			args[0] = panelRobot;
+
+			t1 = ac.createNewAgent(nomAgent, typeAgent, args);
 			// fire-up the agent
 			t1.start();
 			countAgent++;

@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import app.gui.JPanelRobot;
 import jade.core.Agent;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
@@ -25,6 +26,10 @@ public class AgentRobot extends Agent {
 		messageFromRobot = "";
 
 		Object[] args = getArguments();
+		panelRobot = (JPanelRobot) args[0];
+		String addrIP = panelRobot.getAddrIP();
+		int port = panelRobot.getPort();
+
 		// panelConfig = (JPanelConfigurationMoulage) args[0];
 		// panelAgent = (JPanelAgentsMoulage) args[1];
 		// tempsInjectionMillisecondes = panelConfig.getTempsInjection() * 1000;
@@ -50,7 +55,7 @@ public class AgentRobot extends Agent {
 
 		// Test partie correcte
 		try {
-			initializeConnection(InetAddress.getByName("localhost"), 1111);
+			initializeConnection(InetAddress.getByName(addrIP), port);
 		} catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -90,6 +95,7 @@ public class AgentRobot extends Agent {
 	protected void takeDown() {
 		try {
 			DFService.deregister(this);
+			closeConnection();
 		} catch (Exception e) {
 		}
 	}
@@ -175,6 +181,8 @@ public class AgentRobot extends Agent {
 	private Socket socket;
 	private PrintStream outSendMessage;
 	private BufferedReader inputMessageFromRobot;
+
+	private JPanelRobot panelRobot;
 
 	private String message;
 	private int i;
