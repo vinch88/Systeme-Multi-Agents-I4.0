@@ -169,7 +169,12 @@ public class AgentRobot extends Agent {
 
 	private void sendMessageToSynapxis(String message) {
 		outSendMessage.println(message);
-		messageFromRobot = inputMessageFromRobot.toString();
+		try {
+			messageFromRobot = inputMessageFromRobot.readLine();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		System.out.println("FROM Synapxis: " + messageFromRobot);
 	}
 
