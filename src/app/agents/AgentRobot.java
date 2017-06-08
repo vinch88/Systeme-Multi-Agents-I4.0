@@ -10,6 +10,8 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import javax.swing.JPanel;
+
 import app.gui.JPanelRobot;
 import jade.core.AID;
 import jade.core.Agent;
@@ -35,22 +37,8 @@ public class AgentRobot extends Agent {
 
 		panelRobot.setStatut("Starting" + getLocalName());
 
-		// Enregistrement de l'agent dans les pages jaunes
-		DFAgentDescription dfd = new DFAgentDescription();
-		dfd.setName(getAID());
-		ServiceDescription sd = new ServiceDescription();
-		sd.setType("robot");
-		sd.setName(getLocalName());
-		dfd.addServices(sd);
-		try {
-			DFService.register(this, dfd);
-		} catch (FIPAException fe) {
-			fe.printStackTrace();
-			// System.out.println(getLocalName() + " failed to register to
-			// dfs");
-			panelRobot.setStatut(getLocalName() + " failed to register to dfs");
-
-		}
+		// Registery not obligatory in this case
+		RegisterToDsf("robot", panelRobot);
 
 		try {
 			initializeConnection(InetAddress.getByName(addrIP), port);
@@ -118,6 +106,25 @@ public class AgentRobot extends Agent {
 	/*------------------------------------------------------------------*\
 	|*							Methodes Private						*|
 	\*------------------------------------------------------------------*/
+
+	private void RegisterToDsf(String type, JPanel panelRobot) {
+		// Register the agent into the dsf
+		DFAgentDescription dfd = new DFAgentDescription();
+		dfd.setName(getAID());
+		ServiceDescription sd = new ServiceDescription();
+		sd.setType(type);
+		sd.setName(getLocalName());
+		dfd.addServices(sd);
+		try {
+			DFService.register(this, dfd);
+		} catch (FIPAException fe) {
+			fe.printStackTrace();
+			// System.out.println(getLocalName() + " failed to register to
+			// dfs");
+			((JPanelRobot) panelRobot).setStatut(getLocalName() + " failed to register to dfs");
+		}
+
+	}
 
 	private Boolean initializeConnection(InetAddress addr, int port) {
 		// System.out.println("Trying to connect to Synapxis");
@@ -204,7 +211,8 @@ public class AgentRobot extends Agent {
 			template.addServices(sd);
 			try {
 				DFAgentDescription[] result = DFService.search(myAgent, template);
-				System.out.println("Le robot: " + getLocalName() + " a trouvé les agents presse suivants:");
+				// System.out.println("Le robot: " + getLocalName() + " a trouvé
+				// les agents presse suivants:");
 				listAgentsPresse = new AID[result.length];
 				for (int i = 0; i < result.length; ++i) {
 					listAgentsPresse[i] = result[i].getName();
@@ -214,15 +222,17 @@ public class AgentRobot extends Agent {
 				fe.printStackTrace();
 			}
 
+			step = 0;
+
 			switch (step) {
 			case 0:
+
 				messageBehaviour = "isWorking"; // ask all the press if they are
 												// working
 				agentPresse = null;
 				makeAndSendCfp(listAgentsPresse, "presse", messageBehaviour, mtpresse);
 				step = 1;
 				break;
-
 			case 1:
 				// Get all the responses from the press
 				reply = myAgent.receive(mtpresse);
@@ -231,6 +241,7 @@ public class AgentRobot extends Agent {
 					if (reply.getPerformative() == ACLMessage.PROPOSE) {
 						// This is an offer
 						agentPresse = reply.getSender();
+						step = 2;
 					}
 					repliesCnt++;
 					if (repliesCnt >= listAgentsPresse.length) {
@@ -276,6 +287,8 @@ public class AgentRobot extends Agent {
 								// proposal
 								messageBehaviour = "refuse";
 								makeAndSendRejectProposal(agentPresse, "presse", messageBehaviour);
+								repliesCnt = 0;
+								step = 5;
 							}
 						}
 					}
@@ -302,6 +315,8 @@ public class AgentRobot extends Agent {
 							while (response == null) {
 								// wait the response from Synapxis
 							}
+							// job done, send a message to the press that it can
+							// start is job if it has to be
 							sendMessageToAgent(agentPresse, messageBehaviour + " done");
 
 						}
