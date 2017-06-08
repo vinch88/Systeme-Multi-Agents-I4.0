@@ -8,7 +8,7 @@ import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 
-public class AgentMachine extends Agent {
+public class AgentPresse extends Agent {
 
 	protected void setup() {
 		System.out.println("Démarrage de " + getLocalName());
@@ -22,7 +22,7 @@ public class AgentMachine extends Agent {
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		ServiceDescription sd = new ServiceDescription();
-		sd.setType("machine");
+		sd.setType("presse");
 		sd.setName(getLocalName());
 		dfd.addServices(sd);
 		try {
@@ -55,21 +55,6 @@ public class AgentMachine extends Agent {
 					fe.printStackTrace();
 				}
 
-				// Update de la liste des machines
-				sd.setType("machine");
-				template.addServices(sd);
-				try {
-					DFAgentDescription[] result = DFService.search(myAgent, template);
-					// System.out.println("Le robot: " + getLocalName() + " a
-					// trouvé les agents machines suivants:");
-					// listAgentsMachine = new AID[result.length];
-					// for (int i = 0; i < result.length; ++i) {
-					// listAgentsMachine[i] = result[i].getName();
-					// // System.out.println(listAgentsMachine[i].getName());
-					// }
-				} catch (FIPAException fe) {
-					fe.printStackTrace();
-				}
 				// Envoie la requête
 				// addBehaviour(new RequestPerformer());
 

@@ -14,6 +14,7 @@ import app.gui.JPanelRobot;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
@@ -90,49 +91,8 @@ public class AgentRobot extends Agent {
 		});
 		t1.start();
 
-		addBehaviour(new TickerBehaviour(this, 1000) {
-
-			@Override
-			protected void onTick() {
-
-				// Update de la liste des presses
-				DFAgentDescription template = new DFAgentDescription();
-				ServiceDescription sd = new ServiceDescription();
-				sd.setType("presse");
-				template.addServices(sd);
-				try {
-					DFAgentDescription[] result = DFService.search(myAgent, template);
-					// System.out.println("Le robot: " + getLocalName() + " a
-					// trouvé les agents presse suivants:");
-					// listAgentsPresse = new AID[result.length];
-					// for (int i = 0; i < result.length; ++i) {
-					// listAgentsPresse[i] = result[i].getName();
-					// // System.out.println(listAgentsPresse[i].getName());
-					// }
-				} catch (FIPAException fe) {
-					fe.printStackTrace();
-				}
-
-				// Update de la liste des machines
-				sd.setType("machine");
-				template.addServices(sd);
-				try {
-					DFAgentDescription[] result = DFService.search(myAgent, template);
-					// System.out.println("Le robot: " + getLocalName() + " a
-					// trouvé les agents machines suivants:");
-					// listAgentsMachine = new AID[result.length];
-					// for (int i = 0; i < result.length; ++i) {
-					// listAgentsMachine[i] = result[i].getName();
-					// // System.out.println(listAgentsMachine[i].getName());
-					// }
-				} catch (FIPAException fe) {
-					fe.printStackTrace();
-				}
-				// Envoie la requête
-				addBehaviour(new RequestPerformer());
-
-			}
-		});
+		// Add a CyclicBehaviour
+		addBehaviour(new RequestPerformer());
 	}
 
 	protected void takeDown() {
@@ -195,7 +155,7 @@ public class AgentRobot extends Agent {
 		}
 	}
 
-	private void sendMessageToSynapxis(String message) {
+	private String sendMessageToSynapxis(String message) {
 		outSendMessage.println(message);
 		try {
 			messageFromRobot = inputMessageFromRobot.readLine();
@@ -205,6 +165,7 @@ public class AgentRobot extends Agent {
 		}
 		// System.out.println("FROM Synapxis: " + messageFromRobot);
 		panelRobot.setStatut("FROM Synapxis: " + messageFromRobot);
+		return messageFromRobot;
 	}
 
 	/*------------------------------------------------------------------*\
@@ -215,7 +176,8 @@ public class AgentRobot extends Agent {
 	private Socket socket;
 	private PrintStream outSendMessage;
 	private BufferedReader inputMessageFromRobot;
-
+	private AID[] listAgentsPresse;
+	private AID agentPresse;
 	private JPanelRobot panelRobot;
 
 	// debug
@@ -231,54 +193,205 @@ public class AgentRobot extends Agent {
 	 * Inner class RequestPerformer. This is the behaviour used by Robot agent
 	 * to request if the machine is working or not.
 	 */
-	private class RequestPerformer extends Behaviour {
-		private AID machineChambreVide; // La machine dont la chambre n'est pas
-										// vide
-		private AID machineFiniWork;
-		private AID presseASoustraire;
-		private String message;
-		private MessageTemplate mtpresse; // The template to receive replies
-		private MessageTemplate mtmachine; // The template to receive replies
-
-		private int step;
-
-		private ACLMessage cfp; // la demande
-		private ACLMessage order; // l'ordre
-		private ACLMessage reply; // la réponse
+	private class RequestPerformer extends CyclicBehaviour {
 
 		public void action() {
+
+			// Update the list of presses
+			DFAgentDescription template = new DFAgentDescription();
+			ServiceDescription sd = new ServiceDescription();
+			sd.setType("presse");
+			template.addServices(sd);
+			try {
+				DFAgentDescription[] result = DFService.search(myAgent, template);
+				System.out.println("Le robot: " + getLocalName() + " a trouvé les agents presse suivants:");
+				listAgentsPresse = new AID[result.length];
+				for (int i = 0; i < result.length; ++i) {
+					listAgentsPresse[i] = result[i].getName();
+					// System.out.println(listAgentsPresse[i].getName());
+				}
+			} catch (FIPAException fe) {
+				fe.printStackTrace();
+			}
+
 			switch (step) {
 			case 0:
-				message = "isVide";
-				// Envoie le cfp à toutes les machines à fabrication additives
-				cfp = new ACLMessage(ACLMessage.CFP);
-				// for (int i = 0; i < listAgentsMachine.length; ++i) {
-				// cfp.addReceiver(listAgentsMachine[i]);
-				// }
-				cfp.setContent(message);
-				cfp.setConversationId("machine");
-				cfp.setReplyWith("cfp" + System.currentTimeMillis()); // Unique
-																		// value
-				// myAgent.send(cfp);
-				// Prepare the template to get proposals
-				mtmachine = MessageTemplate.and(MessageTemplate.MatchConversationId("machine"),
-						MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-				// panelAgent.setMessage(
-				// "Le robot recherche une machine ne travaillant pas et dont la
-				// chambre n'est pas vide");
+				messageBehaviour = "isWorking"; // ask all the press if they are
+												// working
+				agentPresse = null;
+				makeAndSendCfp(listAgentsPresse, "presse", messageBehaviour, mtpresse);
 				step = 1;
+				break;
+
+			case 1:
+				// Get all the responses from the press
+				reply = myAgent.receive(mtpresse);
+				if (reply != null) {
+					// Reply received
+					if (reply.getPerformative() == ACLMessage.PROPOSE) {
+						// This is an offer
+						agentPresse = reply.getSender();
+					}
+					repliesCnt++;
+					if (repliesCnt >= listAgentsPresse.length) {
+						// We received all replies and don't have any
+						// proposition
+						repliesCnt = 0;
+						step = 5;
+					}
+				} else {
+					block();
+				}
+				break;
+			case 2:
+				messageBehaviour = "isFull"; // ask to the press if it is full
+				makeAndSendCfp(agentPresse, "presse", messageBehaviour, mtpresse);
+				step = 3;
+				break;
+			case 3:
+				// Get the response from the press
+				reply = myAgent.receive(mtpresse);
+				if (reply != null) {
+					// Reply received
+					if (reply.getPerformative() == ACLMessage.PROPOSE) {
+						// This is an offer
+						if (reply.getContent().equals("full")) {
+							// The machine is full
+							messageBehaviour = "dechargement"; // send to the
+																// press that it
+																// have to
+																// discharge
+							makeAndSendAcceptProposal(agentPresse, "presse", messageBehaviour, mtpresse);
+						} else {
+							if (reply.getContent().equals("empty")) {
+								// The machine is empty
+								messageBehaviour = "chargement"; // send to the
+																	// press
+																	// that it
+																	// have to
+																	// charge
+								makeAndSendAcceptProposal(agentPresse, "presse", messageBehaviour, mtpresse);
+							} else {
+								// Got an unexpected message, we refuse the
+								// proposal
+								messageBehaviour = "refuse";
+								makeAndSendRejectProposal(agentPresse, "presse", messageBehaviour);
+							}
+						}
+					}
+					repliesCnt++;
+					if (repliesCnt > 0) {
+						// We received the reply
+						repliesCnt = 0;
+						step = 4;
+					}
+				} else {
+					block();
+				}
+				break;
+			case 4:
+				// Receive the purchase order reply
+				reply = myAgent.receive(mtpresse);
+				if (reply != null) {
+					// Purchase order reply received
+					if (reply.getPerformative() == ACLMessage.INFORM) {
+						// Purchase successful. We can start the robot and say
+						// to the press when the job is done
+						if (messageBehaviour.equals("chargement") || messageBehaviour.equals("dechargement")) {
+							String response = sendMessageToSynapxis(messageBehaviour);
+							while (response == null) {
+								// wait the response from Synapxis
+							}
+							sendMessageToAgent(agentPresse, messageBehaviour + " done");
+
+						}
+					} else {
+						System.out.println("Attempt failed: the robot didn't " + messageBehaviour);
+					}
+
+					step = 5;
+				} else {
+					block();
+				}
 				break;
 			}
 
 		}
 
-		@Override
-		public boolean done() {
-			if (step == 8) {
-				step = 0;
+		/*------------------------------------------------------------------*\
+		|*						Attributs Private Behaviour					*|
+		\*------------------------------------------------------------------*/
+		private String messageBehaviour;
+		private MessageTemplate mtpresse; // The template to receive replies
+		private ACLMessage cfp; // The demand
+		private ACLMessage order; // The order
+		private ACLMessage reply; // The response
+		private int repliesCnt = 0; // The counter of replies from agents
+
+		private int step; // The current step of this behaviour
+
+		/*------------------------------------------------------------------*\
+		|*						Methodes Private Behavious					*|
+		\*------------------------------------------------------------------*/
+
+		private void makeAndSendCfp(AID[] listAgent, String convID, String message, MessageTemplate template) {
+
+			cfp = new ACLMessage(ACLMessage.CFP);
+			for (int i = 0; i < listAgent.length; ++i) {
+				cfp.addReceiver(listAgent[i]);
 			}
-			return true;
+			cfp.setContent(message);
+			cfp.setConversationId(convID);
+			cfp.setReplyWith("cfp" + System.currentTimeMillis()); // Unique
+																	// value
+			myAgent.send(cfp);
+			// Prepare the template to get proposals
+			template = MessageTemplate.and(MessageTemplate.MatchConversationId(convID),
+					MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
 		}
+
+		private void makeAndSendCfp(AID agent, String convID, String message, MessageTemplate template) {
+
+			cfp = new ACLMessage(ACLMessage.CFP);
+			cfp.addReceiver(agent);
+			cfp.setContent(message);
+			cfp.setConversationId(convID);
+			cfp.setReplyWith("cfp" + System.currentTimeMillis()); // Unique
+																	// value
+			myAgent.send(cfp);
+			// Prepare the template to get proposals
+			template = MessageTemplate.and(MessageTemplate.MatchConversationId(convID),
+					MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+		}
+
+		private void makeAndSendAcceptProposal(AID agent, String convID, String message, MessageTemplate template) {
+			order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+			order.addReceiver(agent);
+			order.setContent(message);
+			order.setConversationId(convID);
+			order.setReplyWith("order" + System.currentTimeMillis());
+			myAgent.send(order);
+			// Préparation du template pour obtenir la réponse de la demande
+			template = MessageTemplate.and(MessageTemplate.MatchConversationId(convID),
+					MessageTemplate.MatchInReplyTo(order.getReplyWith()));
+		}
+
+		private void makeAndSendRejectProposal(AID agent, String convID, String message) {
+			ACLMessage order = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
+			order.addReceiver(agent);
+			order.setContent(message);
+			order.setConversationId(convID);
+			order.setReplyWith("order" + System.currentTimeMillis());
+			myAgent.send(order);
+		}
+
+		private void sendMessageToAgent(AID agent, String content) {
+			ACLMessage message = new ACLMessage(ACLMessage.INFORM);
+			message.addReceiver(agent);
+			message.setContent(content);
+			send(message);
+		}
+
 	} // End of inner class RequestPerformer
 
 }
