@@ -25,15 +25,14 @@ import jade.lang.acl.MessageTemplate;
 public class AgentRobot extends Agent {
 
 	protected void setup() {
-		System.out.println("Démarrage de " + getLocalName());
-		// Make this agent terminate
-		// doDelete();
 		messageFromRobot = "";
 
 		Object[] args = getArguments();
 		panelRobot = (JPanelRobot) args[0];
 		String addrIP = panelRobot.getAddrIP();
 		int port = panelRobot.getPort();
+
+		panelRobot.setStatut("Starting" + getLocalName());
 
 		// Enregistrement de l'agent dans les pages jaunes
 		DFAgentDescription dfd = new DFAgentDescription();
