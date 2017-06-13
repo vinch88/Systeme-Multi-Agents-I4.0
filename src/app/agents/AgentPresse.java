@@ -19,6 +19,8 @@ public class AgentPresse extends Agent {
 	 */
 	protected void setup() {
 
+		isWorking = false;
+		isFull = false;
 		Object[] args = getArguments();
 		panelPresse = (JPanelPresse) args[0];
 
@@ -186,6 +188,9 @@ public class AgentPresse extends Agent {
 				}
 
 				myAgent.send(reply);
+
+				// debug
+				System.out.println("Response to CFP send: " + reply);
 			} else {
 				block();
 			}
@@ -230,6 +235,8 @@ public class AgentPresse extends Agent {
 
 				}
 				myAgent.send(reply);
+				// debug
+				System.out.println("Response to Accept-Proposal send: " + reply);
 			} else {
 				block();
 			}
@@ -263,6 +270,8 @@ public class AgentPresse extends Agent {
 				messageBehaviour = msg.getContent();
 				if (messageBehaviour.equals("chargement done")) {
 					// The robot has charge this press we can start the job
+					panelPresse.setStatut("Starting the job");
+
 					isWorking = true;
 					isFull = true;
 					// debug
@@ -270,12 +279,29 @@ public class AgentPresse extends Agent {
 					sendMessageToTwinCat(strMess);
 					// when the job is done by twincat, we can put isWorking at
 					// false
-					isWorking = false;
+
+					Thread t1 = new Thread(new Runnable() {
+
+						@Override
+						public void run() {
+							try {
+								Thread.sleep(5000);
+								isWorking = false;
+								panelPresse.setStatut("Job done");
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+						}
+					});
+					t1.start();
 
 				}
 				if (messageBehaviour.equals("dechargement done")) {
 					// The robot has discharge this press
 					isFull = false;
+					panelPresse.setStatut("The press is empty");
 				}
 			} else {
 				block();

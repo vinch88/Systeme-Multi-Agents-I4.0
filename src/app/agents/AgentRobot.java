@@ -52,35 +52,35 @@ public class AgentRobot extends Agent {
 		}
 
 		// Debug
-		i = 0;
-		message = "";
-		test = true;
-		Thread t1 = new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				while (test) {
-
-					try {
-						Thread.sleep(10000);
-						if (i % 2 == 0) {
-							message = "chargement";
-						} else {
-							message = "dechargement";
-						}
-						sendMessageToSynapxis(message);
-						if (i > 10)
-							test = false;
-						i++;
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-
-			}
-
-		});
-		t1.start();
+		// i = 0;
+		// message = "";
+		// test = true;
+		// Thread t1 = new Thread(new Runnable() {
+		//
+		// @Override
+		// public void run() {
+		// while (test) {
+		//
+		// try {
+		// Thread.sleep(10000);
+		// if (i % 2 == 0) {
+		// message = "chargement";
+		// } else {
+		// message = "dechargement";
+		// }
+		// sendMessageToSynapxis(message);
+		// if (i > 10)
+		// test = false;
+		// i++;
+		// } catch (InterruptedException e) {
+		// e.printStackTrace();
+		// }
+		// }
+		//
+		// }
+		//
+		// });
+		// t1.start();
 
 		// Add a CyclicBehaviour
 		addBehaviour(new RequestPerformer());
@@ -240,10 +240,10 @@ public class AgentRobot extends Agent {
 				fe.printStackTrace();
 			}
 
-			step = 0;
-
 			switch (step) {
 			case 0:
+				// debug
+				System.out.println("STEP = " + step);
 
 				messageBehaviour = "isWorking"; // ask all the press if they are
 												// working
@@ -252,10 +252,14 @@ public class AgentRobot extends Agent {
 				step = 1;
 				break;
 			case 1:
+				// debug
+				System.out.println("STEP = " + step);
+
 				// Get all the responses from the press
 				reply = myAgent.receive(mtpresse);
 				if (reply != null) {
 					// Reply received
+					repliesCnt++;
 					if (reply.getPerformative() == ACLMessage.PROPOSE) {
 						if (reply.getContent().equals("is not working")) {
 							// This is an offer
@@ -266,8 +270,7 @@ public class AgentRobot extends Agent {
 							step = 2;
 						}
 					}
-					repliesCnt++;
-					if (repliesCnt >= listAgentsPresse.length) {
+					if (repliesCnt >= listAgentsPresse.length && step != 2) {
 						// We received all replies and don't have any
 						// proposition
 						repliesCnt = 0;
@@ -278,11 +281,17 @@ public class AgentRobot extends Agent {
 				}
 				break;
 			case 2:
+				// debug
+				System.out.println("STEP = " + step);
+
 				messageBehaviour = "isFull"; // ask to the press if it is full
 				makeAndSendCfp(agentPresse, "presse", messageBehaviour, mtpresse);
 				step = 3;
 				break;
 			case 3:
+				// debug
+				System.out.println("STEP = " + step);
+
 				// Get the response from the press
 				reply = myAgent.receive(mtpresse);
 				if (reply != null) {
@@ -326,21 +335,26 @@ public class AgentRobot extends Agent {
 				}
 				break;
 			case 4:
+				// debug
+				System.out.println("STEP = " + step);
+
 				// Receive the purchase order reply
 				reply = myAgent.receive(mtpresse);
 				if (reply != null) {
+
 					// Purchase order reply received
 					if (reply.getPerformative() == ACLMessage.INFORM) {
 						// Purchase successful. We can start the robot and say
 						// to the press when the job is done
 						if (messageBehaviour.equals("chargement") || messageBehaviour.equals("dechargement")) {
 							String response = sendMessageToSynapxis(messageBehaviour);
-							while (response != "chargement done" || response != "dechargement done") {
+							while (response == null) {
+								// while (!response.equals("chargement done") ||
+								// !response.equals("dechargement done")) {
 								// wait the response from Synapxis
-								if (response != null) {
-									panelRobot.setStatut("Error from Synapxis: " + response);
-								}
+
 							}
+							panelRobot.setStatut("Message from Synapxis: " + response);
 							// job done, send a message to the press that it can
 							// start is job if it has to be
 							sendMessageToAgent(agentPresse, response);
@@ -349,12 +363,13 @@ public class AgentRobot extends Agent {
 					} else {
 						System.out.println("Attempt failed: the robot didn't " + messageBehaviour);
 					}
-
 					step = 5;
 				} else {
 					block();
 				}
 				break;
+			case 5:
+				step = 0;
 			}
 
 		}
@@ -369,7 +384,7 @@ public class AgentRobot extends Agent {
 		private ACLMessage reply; // The response
 		private int repliesCnt = 0; // The counter of replies from agents
 
-		private int step; // The current step of this behaviour
+		private int step = 0; // The current step of this behaviour
 
 		/*------------------------------------------------------------------*\
 		|*						Methodes Private Behavious					*|
@@ -392,6 +407,8 @@ public class AgentRobot extends Agent {
 			// Prepare the template to get proposals
 			template = MessageTemplate.and(MessageTemplate.MatchConversationId(convID),
 					MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+			// debug
+			System.out.println("CFP send: " + cfp);
 		}
 
 		/**
@@ -409,6 +426,9 @@ public class AgentRobot extends Agent {
 			// Prepare the template to get proposals
 			template = MessageTemplate.and(MessageTemplate.MatchConversationId(convID),
 					MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+			// debug
+			System.out.println("CFP send: " + cfp);
+
 		}
 
 		/**
@@ -424,6 +444,8 @@ public class AgentRobot extends Agent {
 			// Préparation du template pour obtenir la réponse de la demande
 			template = MessageTemplate.and(MessageTemplate.MatchConversationId(convID),
 					MessageTemplate.MatchInReplyTo(order.getReplyWith()));
+			// debug
+			System.out.println("Accept-Proposal send: " + order);
 		}
 
 		/**
@@ -436,6 +458,8 @@ public class AgentRobot extends Agent {
 			order.setConversationId(convID);
 			order.setReplyWith("order" + System.currentTimeMillis());
 			myAgent.send(order);
+			// debug
+			System.out.println("Reject-Proposal send: " + order);
 		}
 
 		/**
@@ -446,6 +470,9 @@ public class AgentRobot extends Agent {
 			message.addReceiver(agent);
 			message.setContent(content);
 			send(message);
+
+			// debug
+			System.out.println("Inform send: " + message);
 		}
 
 	} // End of inner class RequestPerformer

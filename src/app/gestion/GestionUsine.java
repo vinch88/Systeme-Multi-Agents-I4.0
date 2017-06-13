@@ -7,6 +7,7 @@ import javax.swing.JPanel;
 
 import app.gui.JFrameCopyright;
 import app.gui.JFrameUI;
+import app.gui.JPanelPresse;
 import app.gui.JPanelRobot;
 import jade.core.Agent;
 import jade.core.ProfileImpl;
@@ -97,6 +98,24 @@ public class GestionUsine extends Agent {
 		try {
 			Object[] args = new Object[3];
 			args[0] = panelRobot;
+
+			t1 = ac.createNewAgent(nomAgent, typeAgent, args);
+			// fire-up the agent
+			t1.start();
+			countAgent++;
+
+		} catch (StaleProxyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return t1;
+	}
+
+	public AgentController createAgent(String nomAgent, String typeAgent, JPanelPresse panelPresse) {
+
+		try {
+			Object[] args = new Object[3];
+			args[0] = panelPresse;
 
 			t1 = ac.createNewAgent(nomAgent, typeAgent, args);
 			// fire-up the agent
