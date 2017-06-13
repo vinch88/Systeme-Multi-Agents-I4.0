@@ -27,6 +27,9 @@ import jade.lang.acl.MessageTemplate;
 
 public class AgentRobot extends Agent {
 
+	/**
+	 * Starting the AgentRobot
+	 */
 	protected void setup() {
 		messageFromRobot = "";
 
@@ -83,6 +86,9 @@ public class AgentRobot extends Agent {
 		addBehaviour(new RequestPerformer());
 	}
 
+	/**
+	 * Stoping the AgentRobot
+	 */
 	protected void takeDown() {
 		try {
 			DFService.deregister(this);
@@ -107,6 +113,9 @@ public class AgentRobot extends Agent {
 	|*							Methodes Private						*|
 	\*------------------------------------------------------------------*/
 
+	/**
+	 * Method for registering the agentRobot to the dsf
+	 */
 	private void RegisterToDsf(String type, JPanel panelRobot) {
 		// Register the agent into the dsf
 		DFAgentDescription dfd = new DFAgentDescription();
@@ -126,6 +135,9 @@ public class AgentRobot extends Agent {
 
 	}
 
+	/**
+	 * Method for initialize a TCP connection
+	 */
 	private Boolean initializeConnection(InetAddress addr, int port) {
 		// System.out.println("Trying to connect to Synapxis");
 		panelRobot.setStatut(getLocalName() + " trying to connect to Synapxis");
@@ -148,6 +160,9 @@ public class AgentRobot extends Agent {
 
 	}
 
+	/**
+	 * Method for closing a TCP connection
+	 */
 	private Boolean closeConnection() {
 		try {
 			socket.close();
@@ -162,6 +177,9 @@ public class AgentRobot extends Agent {
 		}
 	}
 
+	/**
+	 * Method for sending a message to the Synapxis robot
+	 */
 	private String sendMessageToSynapxis(String message) {
 		outSendMessage.println(message);
 		try {
@@ -239,9 +257,14 @@ public class AgentRobot extends Agent {
 				if (reply != null) {
 					// Reply received
 					if (reply.getPerformative() == ACLMessage.PROPOSE) {
-						// This is an offer
-						agentPresse = reply.getSender();
-						step = 2;
+						if (reply.getContent().equals("is not working")) {
+							// This is an offer
+							agentPresse = reply.getSender();
+							// we refuse this proposal, we want to know if this
+							// press is full or not
+							makeAndSendRejectProposal(agentPresse, "presse", "refuse");
+							step = 2;
+						}
 					}
 					repliesCnt++;
 					if (repliesCnt >= listAgentsPresse.length) {
@@ -312,12 +335,15 @@ public class AgentRobot extends Agent {
 						// to the press when the job is done
 						if (messageBehaviour.equals("chargement") || messageBehaviour.equals("dechargement")) {
 							String response = sendMessageToSynapxis(messageBehaviour);
-							while (response == null) {
+							while (response != "chargement done" || response != "dechargement done") {
 								// wait the response from Synapxis
+								if (response != null) {
+									panelRobot.setStatut("Error from Synapxis: " + response);
+								}
 							}
 							// job done, send a message to the press that it can
 							// start is job if it has to be
-							sendMessageToAgent(agentPresse, messageBehaviour + " done");
+							sendMessageToAgent(agentPresse, response);
 
 						}
 					} else {
@@ -349,6 +375,9 @@ public class AgentRobot extends Agent {
 		|*						Methodes Private Behavious					*|
 		\*------------------------------------------------------------------*/
 
+		/**
+		 * Method for create and send a CFP
+		 */
 		private void makeAndSendCfp(AID[] listAgent, String convID, String message, MessageTemplate template) {
 
 			cfp = new ACLMessage(ACLMessage.CFP);
@@ -365,6 +394,9 @@ public class AgentRobot extends Agent {
 					MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
 		}
 
+		/**
+		 * Method for create and send a CFP
+		 */
 		private void makeAndSendCfp(AID agent, String convID, String message, MessageTemplate template) {
 
 			cfp = new ACLMessage(ACLMessage.CFP);
@@ -379,6 +411,9 @@ public class AgentRobot extends Agent {
 					MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
 		}
 
+		/**
+		 * Method for create and send an Accept-Proposal
+		 */
 		private void makeAndSendAcceptProposal(AID agent, String convID, String message, MessageTemplate template) {
 			order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
 			order.addReceiver(agent);
@@ -391,6 +426,9 @@ public class AgentRobot extends Agent {
 					MessageTemplate.MatchInReplyTo(order.getReplyWith()));
 		}
 
+		/**
+		 * Method for create and send an Reject-Proposal
+		 */
 		private void makeAndSendRejectProposal(AID agent, String convID, String message) {
 			ACLMessage order = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
 			order.addReceiver(agent);
@@ -400,6 +438,9 @@ public class AgentRobot extends Agent {
 			myAgent.send(order);
 		}
 
+		/**
+		 * Method for sending a message to an agent
+		 */
 		private void sendMessageToAgent(AID agent, String content) {
 			ACLMessage message = new ACLMessage(ACLMessage.INFORM);
 			message.addReceiver(agent);

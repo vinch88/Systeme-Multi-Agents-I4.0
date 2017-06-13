@@ -9,16 +9,20 @@ import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 
 public class AgentPresse extends Agent {
 
+	/**
+	 * Starting the AgentPresse
+	 */
 	protected void setup() {
-		System.out.println("Démarrage de " + getLocalName());
-		// Make this agent terminate
-		// doDelete();
 
 		Object[] args = getArguments();
 		panelPresse = (JPanelPresse) args[0];
+
+		panelPresse.setStatut("Starting" + getLocalName());
 
 		RegisterToDsf("presse", panelPresse);
 
@@ -30,6 +34,9 @@ public class AgentPresse extends Agent {
 
 	}
 
+	/**
+	 * Stoping the AgentPresse
+	 */
 	protected void takeDown() {
 		try {
 			DFService.deregister(this);
@@ -53,6 +60,9 @@ public class AgentPresse extends Agent {
 	|*							Methodes Private						*|
 	\*------------------------------------------------------------------*/
 
+	/**
+	 * Method for registering the agentPresse to the dsf
+	 */
 	private void RegisterToDsf(String type, JPanel panelPresse) {
 		// Register the agent into the dsf
 		DFAgentDescription dfd = new DFAgentDescription();
@@ -93,9 +103,36 @@ public class AgentPresse extends Agent {
 		return null;
 	}
 
-	private String sendMessageToSynapxis(String message) {
+	private String sendMessageToTwinCat(String message) {
 
 		return messageFromTwincat;
+	}
+
+	private String changeModePresse() {
+		return null;
+	}
+
+	private String startPresse() {
+
+		return null;
+	}
+
+	private String resetPresse() {
+
+		return null;
+	}
+
+	private String getNombrePieceFromPresse() {
+
+		return null;
+	}
+
+	private void changerVitesse(int vitesse) {
+
+	}
+
+	private void startMoteur() {
+
 	}
 
 	/*------------------------------------------------------------------*\
@@ -104,6 +141,8 @@ public class AgentPresse extends Agent {
 
 	private String messageFromTwincat;
 	private JPanelPresse panelPresse;
+	private Boolean isWorking;
+	private Boolean isFull;
 
 	/*------------------------------------------------------------------*\
 	|*								Behaviours							*|
@@ -115,40 +154,56 @@ public class AgentPresse extends Agent {
 	 */
 	private class OfferRequestsServer extends CyclicBehaviour {
 		public void action() {
-			// mt = MessageTemplate.MatchPerformative(ACLMessage.CFP);
-			// msg = myAgent.receive(mt);
-			// if (msg != null) {
-			// // CFP Message received. Process it
-			// message = msg.getContent();
-			// reply = msg.createReply();
-			// if (getIsChambreVide()) {
-			// // La chambre de la machine est vide
-			// System.out.println("La chambre de " + getLocalName() + " est
-			// vide");
-			// String strVide = "vide";
-			// reply.setPerformative(ACLMessage.PROPOSE);
-			// reply.setContent(strVide);
-			// } else {
-			// if (getIsWorking()) {
-			// // La chambre est entrain de travailler
-			// reply.setPerformative(ACLMessage.REFUSE);
-			// reply.setContent("en cours de travail");
-			// } else {
-			// if (!waitResponse) {
-			// // La chambre n'est pas vide mais le travail est
-			// // terminé
-			// reply.setPerformative(ACLMessage.PROPOSE);
-			// waitResponse = true;
-			// reply.setContent("fini");
-			// }
-			// }
-			// }
-			//
-			// myAgent.send(reply);
-			// } else {
-			// block();
-			// }
+			mt = MessageTemplate.MatchPerformative(ACLMessage.CFP);
+			msg = myAgent.receive(mt);
+			if (msg != null) {
+				// CFP Message received. Process it
+				messageBehaviour = msg.getContent();
+				reply = msg.createReply();
+				if (messageBehaviour.equals("isWorking")) {
+					// The robot search one press who is not working
+					if (!isWorking) {
+						// The press is not working, can be charge or discharge
+						reply.setPerformative(ACLMessage.PROPOSE);
+						reply.setContent("is not working");
+					} else {
+						// The press is working, we refuse
+						reply.setPerformative(ACLMessage.REFUSE);
+						reply.setContent("is working");
+					}
+
+				}
+				if (messageBehaviour.equals("isFull")) {
+					if (isFull) {
+						// The press is full, it has to be discharge
+						reply.setPerformative(ACLMessage.PROPOSE);
+						reply.setContent("full");
+					} else {
+						// The press is not full, it has to be charge
+						reply.setPerformative(ACLMessage.PROPOSE);
+						reply.setContent("empty");
+					}
+				}
+
+				myAgent.send(reply);
+			} else {
+				block();
+			}
 		}
+
+		/*------------------------------------------------------------------*\
+		|*						Attributs Private Behaviour					*|
+		\*------------------------------------------------------------------*/
+
+		private MessageTemplate mt;
+		private String messageBehaviour;
+		private ACLMessage reply;
+		private ACLMessage msg;
+
+		/*------------------------------------------------------------------*\
+		|*						Methodes Private Behavious					*|
+		\*------------------------------------------------------------------*/
+
 	} // End of inner class OfferRequestsServer
 
 	/**
@@ -157,67 +212,86 @@ public class AgentPresse extends Agent {
 	 */
 	private class PurchaseOrdersServer extends CyclicBehaviour {
 		public void action() {
-			// mt =
-			// MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
-			// msg = myAgent.receive(mt);
-			// if (msg != null) {
-			// // ACCEPT_PROPOSAL Message received. Process it
-			// message = msg.getContent();
-			// reply = msg.createReply();
-			// if (message.equals("chargement")) {
-			// chargerChambre();
-			// reply.setPerformative(ACLMessage.INFORM);
-			// waitResponse = false;
-			//
-			// } else {
-			// if (message.equals("dechargement")) {
-			// viderChambre();
-			// reply.setPerformative(ACLMessage.INFORM);
-			// } else {
-			// reply.setPerformative(ACLMessage.FAILURE);
-			// reply.setContent("machine non vide");
-			// }
-			//
-			// }
-			// myAgent.send(reply);
-			// } else {
-			// block();
-			// }
+			mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+			msg = myAgent.receive(mt);
+			if (msg != null) {
+				// ACCEPT_PROPOSAL Message received. Process it
+				messageBehaviour = msg.getContent();
+				reply = msg.createReply();
+				if (messageBehaviour.equals("chargement") || messageBehaviour.equals("dechargement")) {
+					// The robot want to charge or discharge the press, we
+					// inform it that it can and wait for his response
+					reply.setPerformative(ACLMessage.INFORM);
+					reply.setContent(messageBehaviour);
+
+				} else {
+					reply.setPerformative(ACLMessage.FAILURE);
+					reply.setContent("There was a problem during the charge/discharge event");
+
+				}
+				myAgent.send(reply);
+			} else {
+				block();
+			}
 		}
+
+		/*------------------------------------------------------------------*\
+		|*						Attributs Private Behaviour					*|
+		\*------------------------------------------------------------------*/
+
+		private MessageTemplate mt;
+		private String messageBehaviour;
+		private ACLMessage reply;
+		private ACLMessage msg;
+
+		/*------------------------------------------------------------------*\
+		|*						Methodes Private Behavious					*|
+		\*------------------------------------------------------------------*/
+
 	} // End of inner class OfferRequestsServer
 
 	/**
 	 * Inner class ChargingDischargingServer. This is the behaviour used by
-	 * Machine to serve incoming offer acceptances from Robot.
+	 * Machine to start his job when the Robot has done his.
 	 */
 	private class ChargingDischargingServer extends CyclicBehaviour {
 		public void action() {
-			// mt =
-			// MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
-			// msg = myAgent.receive(mt);
-			// if (msg != null) {
-			// // ACCEPT_PROPOSAL Message received. Process it
-			// message = msg.getContent();
-			// reply = msg.createReply();
-			// if (message.equals("chargement")) {
-			// chargerChambre();
-			// reply.setPerformative(ACLMessage.INFORM);
-			// waitResponse = false;
-			//
-			// } else {
-			// if (message.equals("dechargement")) {
-			// viderChambre();
-			// reply.setPerformative(ACLMessage.INFORM);
-			// } else {
-			// reply.setPerformative(ACLMessage.FAILURE);
-			// reply.setContent("machine non vide");
-			// }
-			//
-			// }
-			// myAgent.send(reply);
-			// } else {
-			// block();
-			// }
+			mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+			msg = myAgent.receive(mt);
+			if (msg != null) {
+				// We received a message from the robot - Process it
+				messageBehaviour = msg.getContent();
+				if (messageBehaviour.equals("chargement done")) {
+					// The robot has charge this press we can start the job
+					isWorking = true;
+					isFull = true;
+					// debug
+					String strMess = "Have to change this message when connexion with Twincat will be done";
+					sendMessageToTwinCat(strMess);
+					// when the job is done by twincat, we can put isWorking at
+					// false
+					isWorking = false;
+
+				}
+				if (messageBehaviour.equals("dechargement done")) {
+					// The robot has discharge this press
+					isFull = false;
+				}
+			} else {
+				block();
+			}
 		}
+		/*------------------------------------------------------------------*\
+		|*						Attributs Private Behaviour					*|
+		\*------------------------------------------------------------------*/
+
+		private MessageTemplate mt;
+		private String messageBehaviour;
+		private ACLMessage msg;
+
+		/*------------------------------------------------------------------*\
+		|*						Methodes Private Behavious					*|
+		\*------------------------------------------------------------------*/
+
 	} // End of inner class ChargingDischargingServer
 }
