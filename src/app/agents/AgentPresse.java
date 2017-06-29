@@ -3,6 +3,10 @@ package app.agents;
 import javax.swing.JPanel;
 
 import app.gui.JPanelPresse;
+import de.beckhoff.jni.Convert;
+import de.beckhoff.jni.JNIByteBuffer;
+import de.beckhoff.jni.tcads.AdsCallDllFunction;
+import de.beckhoff.jni.tcads.AmsAddr;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.DFService;
@@ -28,6 +32,8 @@ public class AgentPresse extends Agent {
 
 		RegisterToDsf("presse", panelPresse);
 
+		initializeConnection();
+
 		addBehaviour(new OfferRequestsServer());
 
 		addBehaviour(new PurchaseOrdersServer());
@@ -42,6 +48,7 @@ public class AgentPresse extends Agent {
 	protected void takeDown() {
 		try {
 			DFService.deregister(this);
+			closeConnection();
 		} catch (Exception e) {
 		}
 	}
@@ -89,7 +96,28 @@ public class AgentPresse extends Agent {
 
 		try {
 			panelPresse.setStatut(getLocalName() + " connected to Twincat");
+
+			AmsAddr addr = new AmsAddr();
+			JNIByteBuffer handleBuff = new JNIByteBuffer(Integer.SIZE / Byte.SIZE);
+			JNIByteBuffer symbolBuff = new JNIByteBuffer(Convert.StringToByteArr("MAIN.PLCVar", true));
+			JNIByteBuffer dataBuff = new JNIByteBuffer(Integer.SIZE / Byte.SIZE);
+
+			// Open communication
+			AdsCallDllFunction.adsPortOpen();
+			AdsCallDllFunction.getLocalAddress(addr);
+			addr.setPort(AdsCallDllFunction.AMSPORT_R0_PLC_RTS1);
+
+			// Get handle by symbol name
+			err = AdsCallDllFunction.adsSyncReadWriteReq(addr, AdsCallDllFunction.ADSIGRP_SYM_HNDBYNAME, 0x0,
+					handleBuff.getUsedBytesCount(), handleBuff, symbolBuff.getUsedBytesCount(), symbolBuff);
+			if (err != 0) {
+				System.out.println("Error: Get handle: 0x" + Long.toHexString(err));
+			} else {
+				System.out.println("Success: Get handle!");
+			}
+
 			return true;
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			// System.out.println("Fail to connect to Synapxis");
@@ -102,10 +130,23 @@ public class AgentPresse extends Agent {
 
 	private Boolean closeConnection() {
 
-		return null;
+		// Close communication
+		err = AdsCallDllFunction.adsPortClose();
+		if (err != 0) {
+			System.out.println("Error: Close Communication: 0x" + Long.toHexString(err));
+			return false;
+		}
+		return true;
+
 	}
 
 	private String sendMessageToTwinCat(String message) {
+
+		try {
+			System.in.read();
+		} catch (Exception e) {
+			System.out.println("Error: Close program");
+		}
 
 		return messageFromTwincat;
 	}
@@ -145,6 +186,7 @@ public class AgentPresse extends Agent {
 	private JPanelPresse panelPresse;
 	private Boolean isWorking;
 	private Boolean isFull;
+	private long err;
 
 	/*------------------------------------------------------------------*\
 	|*								Behaviours							*|
@@ -300,6 +342,24 @@ public class AgentPresse extends Agent {
 				}
 				if (messageBehaviour.equals("dechargement done")) {
 					// The robot has discharge this press
+
+					Thread t1 = new Thread(new Runnable() {
+
+						@Override
+						public void run() {
+							try {
+								Thread.sleep(2000);
+								isFull = false;
+								panelPresse.setStatut("The press is empty");
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+						}
+					});
+					t1.start();
+
 					isFull = false;
 					panelPresse.setStatut("The press is empty");
 				}

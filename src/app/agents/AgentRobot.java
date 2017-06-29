@@ -243,7 +243,7 @@ public class AgentRobot extends Agent {
 			switch (step) {
 			case 0:
 				// debug
-				System.out.println("STEP = " + step);
+				// System.out.println("STEP = " + step);
 
 				messageBehaviour = "isWorking"; // ask all the press if they are
 												// working
@@ -253,7 +253,7 @@ public class AgentRobot extends Agent {
 				break;
 			case 1:
 				// debug
-				System.out.println("STEP = " + step);
+				// System.out.println("STEP = " + step);
 
 				// Get all the responses from the press
 				reply = myAgent.receive(mtpresse);
@@ -275,6 +275,7 @@ public class AgentRobot extends Agent {
 						// proposition
 						repliesCnt = 0;
 						step = 5;
+						System.out.println("All presses are working");
 					}
 				} else {
 					block();
@@ -282,7 +283,7 @@ public class AgentRobot extends Agent {
 				break;
 			case 2:
 				// debug
-				System.out.println("STEP = " + step);
+				// System.out.println("STEP = " + step);
 
 				messageBehaviour = "isFull"; // ask to the press if it is full
 				makeAndSendCfp(agentPresse, "presse", messageBehaviour, mtpresse);
@@ -290,7 +291,7 @@ public class AgentRobot extends Agent {
 				break;
 			case 3:
 				// debug
-				System.out.println("STEP = " + step);
+				// System.out.println("STEP = " + step);
 
 				// Get the response from the press
 				reply = myAgent.receive(mtpresse);
@@ -336,7 +337,7 @@ public class AgentRobot extends Agent {
 				break;
 			case 4:
 				// debug
-				System.out.println("STEP = " + step);
+				// System.out.println("STEP = " + step);
 
 				// Receive the purchase order reply
 				reply = myAgent.receive(mtpresse);
