@@ -6,6 +6,7 @@ import app.gui.JPanelPresse;
 import de.beckhoff.jni.Convert;
 import de.beckhoff.jni.JNIByteBuffer;
 import de.beckhoff.jni.tcads.AdsCallDllFunction;
+import de.beckhoff.jni.tcads.AdsSymbolEntry;
 import de.beckhoff.jni.tcads.AmsAddr;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
@@ -32,7 +33,20 @@ public class AgentPresse extends Agent {
 
 		RegisterToDsf("presse", panelPresse);
 
-		initializeConnection();
+		// Open connection to Twincat
+		openConnection(panelPresse.getAddrIP(), panelPresse.getPort());
+
+		// Click on the reset button of the press
+		resetPress();
+
+		// Set the automode of the press
+		setModePressAuto();
+
+		// Set the motor of the press on power
+		setPowerOnMotor();
+
+		// Set the speed of the press
+		changeSpeed(11);
 
 		addBehaviour(new OfferRequestsServer());
 
@@ -90,92 +104,213 @@ public class AgentPresse extends Agent {
 		}
 	}
 
-	private Boolean initializeConnection() {
-		// System.out.println("Trying to connect to Synapxis");
-		panelPresse.setStatut(getLocalName() + " trying to connect to Twincat");
+	public void openConnection(String addresse, int port) {
 
-		try {
-			panelPresse.setStatut(getLocalName() + " connected to Twincat");
+		addr = new AmsAddr();
+		handleBuff = new JNIByteBuffer(Integer.SIZE / Byte.SIZE);
+		dataBuff = new JNIByteBuffer(Integer.SIZE / Byte.SIZE);
 
-			AmsAddr addr = new AmsAddr();
-			JNIByteBuffer handleBuff = new JNIByteBuffer(Integer.SIZE / Byte.SIZE);
-			JNIByteBuffer symbolBuff = new JNIByteBuffer(Convert.StringToByteArr("MAIN.PLCVar", true));
-			JNIByteBuffer dataBuff = new JNIByteBuffer(Integer.SIZE / Byte.SIZE);
+		// AdsCallDllFunction.getLocalAddress(addr);
+		addr.setNetIdStringEx(addresse);
+		addr.setPort(port);
 
-			// Open communication
-			AdsCallDllFunction.adsPortOpen();
-			AdsCallDllFunction.getLocalAddress(addr);
-			addr.setPort(AdsCallDllFunction.AMSPORT_R0_PLC_RTS1);
+		// Open communication
+		AdsCallDllFunction.adsPortOpen();
 
-			// Get handle by symbol name
-			err = AdsCallDllFunction.adsSyncReadWriteReq(addr, AdsCallDllFunction.ADSIGRP_SYM_HNDBYNAME, 0x0,
-					handleBuff.getUsedBytesCount(), handleBuff, symbolBuff.getUsedBytesCount(), symbolBuff);
-			if (err != 0) {
-				System.out.println("Error: Get handle: 0x" + Long.toHexString(err));
-			} else {
-				System.out.println("Success: Get handle!");
-			}
-
-			return true;
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			// System.out.println("Fail to connect to Synapxis");
-			panelPresse.setStatut(getLocalName() + " fail to connect to Twincat");
-			doDelete();
-			return false;
-		}
+		panelPresse.setStatut("Connexion open");
+		// System.out.println("Connexion open");
 
 	}
 
-	private Boolean closeConnection() {
+	public Boolean closeConnection() {
 
 		// Close communication
 		err = AdsCallDllFunction.adsPortClose();
 		if (err != 0) {
-			System.out.println("Error: Close Communication: 0x" + Long.toHexString(err));
+			panelPresse.setStatut("Error: Close Communication: 0x" + Long.toHexString(err));
+			// System.out.println("Error: Close Communication: 0x" +
+			// Long.toHexString(err));
 			return false;
 		}
+		// System.out.println("Connexion closed");
+		panelPresse.setStatut("Connexion closed");
+
 		return true;
 
 	}
 
-	private String sendMessageToTwinCat(String message) {
+	private void setModePressAuto() {
+		writeBoolValue("GVL.fbStation.fbBtn.Auto.xEtat", true);
+	}
 
-		try {
-			System.in.read();
-		} catch (Exception e) {
-			System.out.println("Error: Close program");
+	private void setPowerOnMotor() {
+		writeBoolValue("GVL.fbStation.fbAxeX.fbPower.Enable", true);
+	}
+
+	private void startPress() {
+
+		writeBoolValue("GVL.fbStation.fbBtn.HmiStart.xEtat", true);
+	}
+
+	private void resetPress() {
+
+		writeBoolValue("GVL.fbStation.fbBtn.HmiReset.xEtat", true);
+	}
+
+	private void stopPress() {
+		writeBoolValue("GVL.fbStation.fbBtn.HmiStop.xEtat", true);
+	}
+
+	private String getNbPieceFromPress() {
+
+		return readValue("GVL.stParam.stStatus.iCounterPiecesProduites");
+	}
+
+	private String getStatut() {
+
+		return readValue("GVL.stParam.stStatus.sMessageHmiStatus");
+
+	}
+
+	private void changeSpeed(int speed) {
+		writeIntValue("GVL.stParam.stRecipe.lrVitesse", speed);
+	}
+
+	private String getMotorPosition() {
+
+		return readValue("GVL.stParam.stStatus.lrPositionMoteur");
+	}
+
+	public void releaseHandle() {
+
+		// Release handle
+		err = AdsCallDllFunction.adsSyncWriteReq(addr, AdsCallDllFunction.ADSIGRP_SYM_RELEASEHND, 0,
+				handleBuff.getUsedBytesCount(), handleBuff);
+
+		if (err != 0) {
+			panelPresse.setStatut("Error: Release Handle: 0x" + Long.toHexString(err));
+			// System.out.println("Error: Release Handle: 0x" +
+			// Long.toHexString(err));
+		} else {
+			System.out.println("Success: Release Handle!");
+		}
+	}
+
+	public String readValue(String variable) {
+
+		setIGroupIOffAdsSymbolEntry(variable);
+
+		JNIByteBuffer symbolBuff = new JNIByteBuffer(Convert.StringToByteArr(variable, true));
+		dataBuff = new JNIByteBuffer(Integer.SIZE / Byte.SIZE);
+		String val = "";
+
+		// Get handle by symbol name
+		err = AdsCallDllFunction.adsSyncReadWriteReq(addr, AdsCallDllFunction.ADSIGRP_SYM_HNDBYNAME, 0x0,
+				handleBuff.getUsedBytesCount(), handleBuff, symbolBuff.getUsedBytesCount(), symbolBuff);
+
+		if (err != 0) {
+			return "Error: Get handle: 0x" + Long.toHexString(err);
+
+		} else {
+			System.out.println("Success: Get handle!");
 		}
 
-		return messageFromTwincat;
+		// Handle: byte[] to int
+		int hdlBuffToInt = Convert.ByteArrToInt(handleBuff.getByteArray());
+
+		// Read value by handle
+		err = AdsCallDllFunction.adsSyncReadReq(addr, AdsCallDllFunction.ADSIGRP_SYM_VALBYHND, hdlBuffToInt, 0x4,
+				dataBuff);
+		if (err != 0) {
+			return "Error: Read by handle: 0x" + Long.toHexString(err);
+		} else {
+
+			val = Convert.ByteArrToInt(dataBuff.getByteArray()) + "";
+
+			if (adsSymbolEntry.getType().equals("BOOL")) {
+				if (Convert.ByteArrToInt(dataBuff.getByteArray()) != 0) {
+					System.out.println(Convert.ByteArrToInt(dataBuff.getByteArray()) + "=> True");
+					val = "True";
+				} else {
+					System.out.println(Convert.ByteArrToInt(dataBuff.getByteArray()) + "=> False");
+					val = "False";
+				}
+
+			}
+			if (adsSymbolEntry.getType().equals("STRING(50)")) {
+				val = Convert.ByteArrToString(dataBuff.getByteArray()) + "";
+			}
+			System.out.println("Success: " + adsSymbolEntry.getName() + " value: " + val);
+		}
+		return val;
 	}
 
-	private String changeModePresse() {
-		return null;
+	public void setIGroupIOffAdsSymbolEntry(String variable) {
+		JNIByteBuffer symbolBuff = new JNIByteBuffer(Convert.StringToByteArr(variable, true));
+		dataBuff = new JNIByteBuffer(0xFFFF);
+		// Get variable declaration
+		err = AdsCallDllFunction.adsSyncReadWriteReq(addr, AdsCallDllFunction.ADSIGRP_SYM_INFOBYNAMEEX, 0,
+				dataBuff.getUsedBytesCount(), dataBuff, symbolBuff.getUsedBytesCount(), symbolBuff);
+		if (err != 0) {
+			System.out.println("Error: AdsSyncReadReq: 0x" + Long.toHexString(err));
+		} else {
+			// Convert stream to AdsSymbolEntry
+			adsSymbolEntry = new AdsSymbolEntry(dataBuff.getByteArray());
+
+			// Watch informations (debug)
+			// System.out.println("Name:\t\t" + adsSymbolEntry.getName());
+			// System.out.println("Index Group:\t" +
+			// adsSymbolEntry.getiGroup());
+			// System.out.println("Index Offset:\t" +
+			// adsSymbolEntry.getiOffs());
+			// System.out.println("Size:\t\t" + adsSymbolEntry.getSize());
+			// System.out.println("Type:\t\t" + adsSymbolEntry.getType());
+			// System.out.println("Comment:\t" + adsSymbolEntry.getComment());
+
+			iGroup = adsSymbolEntry.getiGroup();
+			iOff = adsSymbolEntry.getiOffs();
+		}
 	}
 
-	private String startPresse() {
+	public String writeIntValue(String variable, int value) {
 
-		return null;
+		String result = "done";
+
+		// Be sure that the handle is the good one
+		readValue(variable);
+
+		dataBuff = new JNIByteBuffer(Convert.IntToByteArr(value));
+
+		// Specify IndexGroup, IndexOffset and write PLCVar
+		err = AdsCallDllFunction.adsSyncWriteReq(addr, iGroup, iOff, dataBuff.getUsedBytesCount(), dataBuff);
+		if (err != 0) {
+			result = "Error: Write by adress: 0x" + Long.toHexString(err);
+			System.out.println("Error: Write by adress: 0x" + Long.toHexString(err));
+		}
+
+		releaseHandle();
+
+		return result;
 	}
 
-	private String resetPresse() {
+	public String writeBoolValue(String variable, Boolean value) {
 
-		return null;
-	}
+		String result = "done";
 
-	private String getNombrePieceFromPresse() {
+		// Be sure that the handle is the good one
+		readValue(variable);
 
-		return null;
-	}
+		JNIByteBuffer dbuff = new JNIByteBuffer(Convert.BoolToByteArr(value));
 
-	private void changerVitesse(int vitesse) {
+		// Specify IndexGroup, IndexOffset and write PLCVar
+		err = AdsCallDllFunction.adsSyncWriteReq(addr, iGroup, iOff, dbuff.getUsedBytesCount(), dbuff);
+		if (err != 0) {
+			result = "Error: Write by adress: 0x" + Long.toHexString(err);
+			System.out.println("Error: Write by adress: 0x" + Long.toHexString(err));
+		}
 
-	}
-
-	private void startMoteur() {
-
+		releaseHandle();
+		return result;
 	}
 
 	/*------------------------------------------------------------------*\
@@ -184,9 +319,17 @@ public class AgentPresse extends Agent {
 
 	private String messageFromTwincat;
 	private JPanelPresse panelPresse;
-	private Boolean isWorking;
 	private Boolean isFull;
+	private Boolean isWorking;
+
+	// For Twincat
+	private AmsAddr addr;
 	private long err;
+	private JNIByteBuffer handleBuff;
+	private JNIByteBuffer dataBuff;
+	private long iGroup;
+	private long iOff;
+	private AdsSymbolEntry adsSymbolEntry;
 
 	/*------------------------------------------------------------------*\
 	|*								Behaviours							*|
@@ -206,6 +349,7 @@ public class AgentPresse extends Agent {
 				reply = msg.createReply();
 				if (messageBehaviour.equals("isWorking")) {
 					// The robot search one press who is not working
+					System.out.println(getStatut());
 					if (!isWorking) {
 						// The press is not working, can be charge or discharge
 						reply.setPerformative(ACLMessage.PROPOSE);
@@ -313,52 +457,58 @@ public class AgentPresse extends Agent {
 				if (messageBehaviour.equals("chargement done")) {
 					// The robot has charge this press we can start the job
 					panelPresse.setStatut("Starting the job");
-
 					isWorking = true;
 					isFull = true;
 					// debug
-					String strMess = "Have to change this message when connexion with Twincat will be done";
-					sendMessageToTwinCat(strMess);
-					// when the job is done by twincat, we can put isWorking at
-					// false
+					startPress();
 
-					Thread t1 = new Thread(new Runnable() {
+					// The job is done
+					while (!getMotorPosition().equals("0")) {
+						panelPresse.setStatut("The press is working");
+					}
+					isWorking = false;
 
-						@Override
-						public void run() {
-							try {
-								Thread.sleep(5000);
-								isWorking = false;
-								panelPresse.setStatut("Job done");
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+					// set the number of piece finished
+					System.out.println("NB PIECES: " + getNbPieceFromPress());
+					panelPresse.setNbPiece(getNbPieceFromPress());
 
-						}
-					});
-					t1.start();
+					// Thread t1 = new Thread(new Runnable() {
+					//
+					// @Override
+					// public void run() {
+					// try {
+					// Thread.sleep(5000);
+					// // isWorking = false;
+					// panelPresse.setStatut("Job done");
+					// } catch (InterruptedException e) {
+					// // TODO Auto-generated catch block
+					// e.printStackTrace();
+					// }
+					//
+					// }
+					// });
+					// t1.start();
 
 				}
 				if (messageBehaviour.equals("dechargement done")) {
 					// The robot has discharge this press
 
-					Thread t1 = new Thread(new Runnable() {
-
-						@Override
-						public void run() {
-							try {
-								Thread.sleep(2000);
-								isFull = false;
-								panelPresse.setStatut("The press is empty");
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-
-						}
-					});
-					t1.start();
+					// Thread t1 = new Thread(new Runnable() {
+					//
+					// @Override
+					// public void run() {
+					// try {
+					// Thread.sleep(2000);
+					// isFull = false;
+					// panelPresse.setStatut("The press is empty");
+					// } catch (InterruptedException e) {
+					// // TODO Auto-generated catch block
+					// e.printStackTrace();
+					// }
+					//
+					// }
+					// });
+					// t1.start();
 
 					isFull = false;
 					panelPresse.setStatut("The press is empty");

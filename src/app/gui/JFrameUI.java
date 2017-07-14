@@ -113,8 +113,8 @@ public class JFrameUI extends JFrame {
 	}
 
 	private void appearance() {
-		setSize(450, 300);
-		setResizable(false);
+		setSize(450, 500);
+		setResizable(true);
 		setTitle("Système Multi-Agents - Industrie 4.0");
 		setLocationRelativeTo(null); // frame centrer
 		setVisible(true); // last!

@@ -59,8 +59,8 @@ public class JPanelPresse extends JPanel {
 	private void geometry() {
 
 		lblStatut = new JLabel("Programme non démarré");
-		tfIP = new JTextField("localhost");
-		tfPort = new JTextField("1111");
+		tfIP = new JTextField("192.168.56.1.1.1");
+		tfPort = new JTextField("851");
 		btnDemarrerTwincat = new JButton("Démarrer TwinCat");
 		JPanel panel = new JPanel();
 
@@ -124,5 +124,10 @@ public class JPanelPresse extends JPanel {
 	private JTextField tfPort;
 	private JButton btnDemarrerTwincat;
 	private JLabel lblStatut;
+
+	public void setNbPiece(String nbPieceFromPress) {
+		// TODO Auto-generated method stub
+
+	}
 
 }

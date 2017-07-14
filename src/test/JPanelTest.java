@@ -22,6 +22,7 @@ public class JPanelTest extends JPanel {
 
 	public JPanelTest() {
 		twinCat = new ConnexionTwincat();
+		twin2 = new ConnexionClean();
 		geometry();
 		control();
 		appearance();
@@ -114,7 +115,11 @@ public class JPanelTest extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				twinCat.initializeConnection(getAddr(), getPort());
+				// twinCat.initializeConnectionDepr(getAddr(), getPort());
+				// twinCat.initializeConnection(getAddr(), getPort());
+
+				twin2.openConnection(getAddr(), getPort());
+				twin2.testReadAndWrite();
 			}
 		});
 
@@ -122,7 +127,8 @@ public class JPanelTest extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				twinCat.closeConnection();
+				// twinCat.closeConnection();
+				twin2.closeConnection();
 			}
 		});
 
@@ -199,4 +205,5 @@ public class JPanelTest extends JPanel {
 	private JButton btnStartMoteur;
 
 	private ConnexionTwincat twinCat;
+	private ConnexionClean twin2;
 }
