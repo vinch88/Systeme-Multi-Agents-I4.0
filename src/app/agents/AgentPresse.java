@@ -47,6 +47,8 @@ public class AgentPresse extends Agent {
 
 		// Set the speed of the press
 		changeSpeed(11);
+		changePosBasse(-50);
+		resetNbPiece();
 
 		addBehaviour(new OfferRequestsServer());
 
@@ -166,14 +168,28 @@ public class AgentPresse extends Agent {
 		return readValue("GVL.stParam.stStatus.iCounterPiecesProduites");
 	}
 
+	private void resetNbPiece() {
+		writeIntValue("GVL.stParam.stStatus.iCounterPiecesProduites", 0);
+	}
+
 	private String getStatut() {
+		return readValue("GVL.fbStation.fbCycleAuto.xBusy");
+		// "GVL.fbStation.fbCycleAuto.xDone"
+		// "GVL.fbStation.fbCycleAuto.xBusy"
 
-		return readValue("GVL.stParam.stStatus.sMessageHmiStatus");
+	}
 
+	private void setStatut(Boolean value) {
+		writeBoolValue("GVL.fbStation.fbCycleAuto.xBusy", value);
 	}
 
 	private void changeSpeed(int speed) {
 		writeIntValue("GVL.stParam.stRecipe.lrVitesse", speed);
+	}
+
+	private void changePosBasse(int position) {
+
+		writeIntValue("GVL.stParam.stRecipe.lrPositionBasse", position);
 	}
 
 	private String getMotorPosition() {
@@ -192,7 +208,7 @@ public class AgentPresse extends Agent {
 			// System.out.println("Error: Release Handle: 0x" +
 			// Long.toHexString(err));
 		} else {
-			System.out.println("Success: Release Handle!");
+			// System.out.println("Success: Release Handle!");
 		}
 	}
 
@@ -212,7 +228,7 @@ public class AgentPresse extends Agent {
 			return "Error: Get handle: 0x" + Long.toHexString(err);
 
 		} else {
-			System.out.println("Success: Get handle!");
+			// System.out.println("Success: Get handle!");
 		}
 
 		// Handle: byte[] to int
@@ -229,10 +245,12 @@ public class AgentPresse extends Agent {
 
 			if (adsSymbolEntry.getType().equals("BOOL")) {
 				if (Convert.ByteArrToInt(dataBuff.getByteArray()) != 0) {
-					System.out.println(Convert.ByteArrToInt(dataBuff.getByteArray()) + "=> True");
+					// System.out.println(Convert.ByteArrToInt(dataBuff.getByteArray())
+					// + "=> True");
 					val = "True";
 				} else {
-					System.out.println(Convert.ByteArrToInt(dataBuff.getByteArray()) + "=> False");
+					// System.out.println(Convert.ByteArrToInt(dataBuff.getByteArray())
+					// + "=> False");
 					val = "False";
 				}
 
@@ -240,7 +258,8 @@ public class AgentPresse extends Agent {
 			if (adsSymbolEntry.getType().equals("STRING(50)")) {
 				val = Convert.ByteArrToString(dataBuff.getByteArray()) + "";
 			}
-			System.out.println("Success: " + adsSymbolEntry.getName() + " value: " + val);
+			// System.out.println("Success: " + adsSymbolEntry.getName() + "
+			// value: " + val);
 		}
 		return val;
 	}
@@ -350,7 +369,7 @@ public class AgentPresse extends Agent {
 				if (messageBehaviour.equals("isWorking")) {
 					// The robot search one press who is not working
 					System.out.println(getStatut());
-					if (!isWorking) {
+					if (getMotorPosition().equals("0")) {
 						// The press is not working, can be charge or discharge
 						reply.setPerformative(ACLMessage.PROPOSE);
 						reply.setContent("is not working");
@@ -457,16 +476,17 @@ public class AgentPresse extends Agent {
 				if (messageBehaviour.equals("chargement done")) {
 					// The robot has charge this press we can start the job
 					panelPresse.setStatut("Starting the job");
-					isWorking = true;
 					isFull = true;
 					// debug
 					startPress();
+					System.out.println("STATUT: " + getStatut());
 
 					// The job is done
-					while (!getMotorPosition().equals("0")) {
+					while (getMotorPosition().equals("0")) {
 						panelPresse.setStatut("The press is working");
 					}
-					isWorking = false;
+					System.out.println("STATUT: " + getStatut());
+					panelPresse.setStatut("The press finished her work");
 
 					// set the number of piece finished
 					System.out.println("NB PIECES: " + getNbPieceFromPress());
