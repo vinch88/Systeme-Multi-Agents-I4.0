@@ -15,6 +15,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import app.gestion.GestionUsine;
+import jade.wrapper.AgentController;
 
 public class JFrameUI extends JFrame {
 
@@ -22,6 +23,9 @@ public class JFrameUI extends JFrame {
 	|*							Constructeurs							*|
 	\*------------------------------------------------------------------*/
 
+	/**
+	 * @param gu
+	 */
 	public JFrameUI(GestionUsine gu) {
 		gestionUsine = gu;
 		geometry();
@@ -56,6 +60,10 @@ public class JFrameUI extends JFrame {
 		panelPresse.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Presse", 0, 0,
 				new Font("Dialog", 1, 16), Color.BLACK));
 
+		panelSuiviProd = new JPanelSuiviProd();
+		panelSuiviProd.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
+				"Suivi de production", 0, 0, new Font("Dialog", 1, 16), Color.BLACK));
+
 		JPanel panel = new JPanel();
 		// btnDemarrer = new JButton("Démarrer la simulation");
 		btnAjouterAgent = new JButton("Démarrer Agents");
@@ -70,9 +78,11 @@ public class JFrameUI extends JFrame {
 		// JComponent : add
 		// panel.add(btnDemarrer);
 		panel.add(btnAjouterAgent);
-		b1.add(panel);
+
+		b1.add(panelSuiviProd);
 		b1.add(panelRobot);
 		b1.add(panelPresse);
+		b1.add(panel);
 		// b1.add(panelBoutons);
 
 		add(b1, BorderLayout.CENTER);
@@ -81,32 +91,20 @@ public class JFrameUI extends JFrame {
 	private void control() {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-		// btnDemarrer.addActionListener(new ActionListener() {
-		//
-		// @Override
-		// public void actionPerformed(ActionEvent e) {
-		// String cmd = "C:\\Program Files
-		// (x86)\\Synapxis\\Synapxis.exe";
-		// try {
-		// Runtime r = Runtime.getRuntime();
-		// Process p = r.exec(cmd);
-		// p.waitFor();// si l'application doit attendre a ce que ce
-		// // process fini
-		// } catch (Exception e1) {
-		// System.out.println("erreur d'execution " + cmd +
-		// e1.toString());
-		// }
-		// Not use right now
-
-		// }
-		// });
-
 		btnAjouterAgent.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				gestionUsine.createAgent("Robot", "app.agents.AgentRobot", panelRobot);
-				gestionUsine.createAgent("Presse", "app.agents.AgentPresse", panelPresse);
+				if (btnAjouterAgent.getText().equals("Démarrer Agents")) {
+					btnAjouterAgent.setText("Stoper Agents");
+					agentRobot = gestionUsine.createAgent("Robot", "app.agents.AgentRobot", panelRobot, panelSuiviProd);
+					agentPress = gestionUsine.createAgent("Presse", "app.agents.AgentPresse", panelPresse);
+				} else {
+					btnAjouterAgent.setText("Démarrer Agents");
+					gestionUsine.killAgent(agentRobot);
+					gestionUsine.killAgent(agentPress);
+				}
+
 			}
 		});
 
@@ -130,7 +128,11 @@ public class JFrameUI extends JFrame {
 	private JButton btnDemarrer;
 	private JButton btnAjouterAgent;
 
+	private AgentController agentPress;
+	private AgentController agentRobot;
+
 	private JPanelRobot panelRobot;
 	private JPanelPresse panelPresse;
+	private JPanelSuiviProd panelSuiviProd;
 
 }

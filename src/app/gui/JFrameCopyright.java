@@ -19,6 +19,9 @@ public class JFrameCopyright extends JFrame {
 	|*							Constructeurs							*|
 	\*------------------------------------------------------------------*/
 
+	/**
+	 * @param gu
+	 */
 	public JFrameCopyright(GestionUsine gu) {
 		gestionUsine = gu;
 		geometry();
@@ -78,20 +81,6 @@ public class JFrameCopyright extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// String cmd = "C:\\Program Files
-				// (x86)\\Synapxis\\Synapxis.exe";
-				// try {
-				// Runtime r = Runtime.getRuntime();
-				// Process p = r.exec(cmd);
-				// // p.waitFor();// si l'application doit attendre a ce que ce
-				// // process fini
-				// new JFrameUI(gestionUsine);
-				// dispose();
-				//
-				// } catch (Exception e1) {
-				// System.out.println("erreur d'execution " + cmd +
-				// e1.toString());
-				// }
 				new JFrameUI(gestionUsine);
 				dispose();
 			}
@@ -100,7 +89,7 @@ public class JFrameCopyright extends JFrame {
 	}
 
 	private void appearance() {
-		setSize(600, 350);
+		setSize(600, 400);
 		setResizable(false);
 		setTitle("Système Multi-Agents - Industrie 4.0");
 		setLocationRelativeTo(null); // frame centrer

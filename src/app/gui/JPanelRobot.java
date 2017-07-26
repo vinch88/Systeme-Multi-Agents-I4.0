@@ -35,6 +35,9 @@ public class JPanelRobot extends JPanel {
 	|*				Set				*|
 	\*------------------------------*/
 
+	/**
+	 * @param message
+	 */
 	public void setStatut(String message) {
 		lblStatut.setText(message);
 	}
@@ -43,10 +46,16 @@ public class JPanelRobot extends JPanel {
 	|*				Get				*|
 	\*------------------------------*/
 
+	/**
+	 * @return the ip
+	 */
 	public String getAddrIP() {
 		return tfIP.getText();
 	}
 
+	/**
+	 * @return the port
+	 */
 	public int getPort() {
 		return Integer.parseInt(tfPort.getText());
 	}
@@ -75,35 +84,19 @@ public class JPanelRobot extends JPanel {
 		GridLayout gridlayout = new GridLayout(3, 2);
 
 		Box bv1 = Box.createVerticalBox();
-		// Box bv2 = Box.createVerticalBox();
+
 		Box bh1 = Box.createHorizontalBox();
-		// Box bh2 = Box.createHorizontalBox();
-		// Box bh3 = Box.createHorizontalBox();
-		//
+
 		bh1.add(lblStatut);
-		bh1.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Statut de l'agent", 0, 0,
-				new Font("Dialog", 1, 16), Color.BLACK));
+
 		panel.setLayout(gridlayout);
-		//
-		// bh1.add(new JLabel("Adresse IP", SwingConstants.CENTER));
-		// bh1.add(tfIP);
-		// bh2.add(new JLabel("Port", SwingConstants.CENTER));
-		// bh2.add(tfPort);
-		// bh3.add(new JPanel());
-		// bh3.add(btnDemarrerSynapxis);
-		//
-		// bv2.add(bh1);
-		// bv2.add(bh2);
-		// bv2.add(bh3);
-		// add(bv1);
-		// add(bv2);
 
 		panel.add(new JLabel("Adresse IP", SwingConstants.CENTER));
-		panel.add(tfIP);
+		panel.add(new JPanelDecorator(tfIP, 10));
 		panel.add(new JLabel("Port", SwingConstants.CENTER));
-		panel.add(tfPort);
+		panel.add(new JPanelDecorator(tfPort, 10));
 		panel.add(new JPanel());
-		panel.add(btnDemarrerSynapxis);
+		panel.add(new JPanelDecorator(btnDemarrerSynapxis, 10));
 
 		bv1.add(bh1);
 		bv1.add(panel);
@@ -124,7 +117,7 @@ public class JPanelRobot extends JPanel {
 					// process fini
 
 				} catch (Exception e1) {
-					System.out.println("erreur d'execution " + cmd + e1.toString());
+					setStatut("Execution error " + cmd + e1.toString());
 				}
 			}
 		});

@@ -36,18 +36,35 @@ public class JPanelPresse extends JPanel {
 	|*				Set				*|
 	\*------------------------------*/
 
+	/**
+	 * @param message
+	 */
 	public void setStatut(String message) {
 		lblStatut.setText(message);
+	}
+
+	/**
+	 * @param nbPieceFromPress
+	 */
+	public void setNbPiece(String nbPieceFromPress) {
+		NbPiecesProduites = nbPieceFromPress;
+
 	}
 
 	/*------------------------------*\
 	|*				Get				*|
 	\*------------------------------*/
 
+	/**
+	 * @return the IP
+	 */
 	public String getAddrIP() {
 		return tfIP.getText();
 	}
 
+	/**
+	 * @return the port
+	 */
 	public int getPort() {
 		return Integer.parseInt(tfPort.getText());
 	}
@@ -61,7 +78,7 @@ public class JPanelPresse extends JPanel {
 		lblStatut = new JLabel("Programme non démarré");
 		tfIP = new JTextField("192.168.56.1.1.1");
 		tfPort = new JTextField("851");
-		btnDemarrerTwincat = new JButton("Démarrer TwinCat");
+		NbPiecesProduites = "0";
 		JPanel panel = new JPanel();
 
 		// Layout : Specification
@@ -73,25 +90,20 @@ public class JPanelPresse extends JPanel {
 
 		// JComponent : add
 
-		GridLayout gridlayout = new GridLayout(3, 2);
+		GridLayout gridlayout = new GridLayout(2, 2);
 
 		Box bv1 = Box.createVerticalBox();
-		// Box bv2 = Box.createVerticalBox();
+
 		Box bh1 = Box.createHorizontalBox();
-		// Box bh2 = Box.createHorizontalBox();
-		// Box bh3 = Box.createHorizontalBox();
-		//
+
 		bh1.add(lblStatut);
-		bh1.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Statut de l'agent", 0, 0,
-				new Font("Dialog", 1, 16), Color.BLACK));
+
 		panel.setLayout(gridlayout);
 
 		panel.add(new JLabel("Adresse IP", SwingConstants.CENTER));
-		panel.add(tfIP);
+		panel.add(new JPanelDecorator(tfIP, 10));
 		panel.add(new JLabel("Port", SwingConstants.CENTER));
-		panel.add(tfPort);
-		panel.add(new JPanel());
-		panel.add(btnDemarrerTwincat);
+		panel.add(new JPanelDecorator(tfPort, 10));
 
 		bv1.add(bh1);
 		bv1.add(panel);
@@ -100,14 +112,6 @@ public class JPanelPresse extends JPanel {
 
 	private void control() {
 
-		btnDemarrerTwincat.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				// if we have to start TwinCat
-				// Not used right now
-			}
-		});
 	}
 
 	private void appearance() {
@@ -122,12 +126,7 @@ public class JPanelPresse extends JPanel {
 	// input
 	private JTextField tfIP;
 	private JTextField tfPort;
-	private JButton btnDemarrerTwincat;
 	private JLabel lblStatut;
-
-	public void setNbPiece(String nbPieceFromPress) {
-		// TODO Auto-generated method stub
-
-	}
+	private String NbPiecesProduites;
 
 }

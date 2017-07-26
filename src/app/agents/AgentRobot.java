@@ -13,6 +13,7 @@ import java.net.UnknownHostException;
 import javax.swing.JPanel;
 
 import app.gui.JPanelRobot;
+import app.gui.JPanelSuiviProd;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
@@ -35,6 +36,7 @@ public class AgentRobot extends Agent {
 
 		Object[] args = getArguments();
 		panelRobot = (JPanelRobot) args[0];
+		panelSuiviProd = (JPanelSuiviProd) args[1];
 		String addrIP = panelRobot.getAddrIP();
 		int port = panelRobot.getPort();
 
@@ -50,37 +52,6 @@ public class AgentRobot extends Agent {
 			panelRobot.setStatut("Fail to convert IP address or port, please verify your entries");
 			doDelete();
 		}
-
-		// Debug
-		// i = 0;
-		// message = "";
-		// test = true;
-		// Thread t1 = new Thread(new Runnable() {
-		//
-		// @Override
-		// public void run() {
-		// while (test) {
-		//
-		// try {
-		// Thread.sleep(10000);
-		// if (i % 2 == 0) {
-		// message = "chargement";
-		// } else {
-		// message = "dechargement";
-		// }
-		// sendMessageToSynapxis(message);
-		// if (i > 10)
-		// test = false;
-		// i++;
-		// } catch (InterruptedException e) {
-		// e.printStackTrace();
-		// }
-		// }
-		//
-		// }
-		//
-		// });
-		// t1.start();
 
 		// Add a CyclicBehaviour
 		addBehaviour(new RequestPerformer());
@@ -115,6 +86,9 @@ public class AgentRobot extends Agent {
 
 	/**
 	 * Method for registering the agentRobot to the dsf
+	 * 
+	 * @param type
+	 * @param panelRobot
 	 */
 	private void RegisterToDsf(String type, JPanel panelRobot) {
 		// Register the agent into the dsf
@@ -128,8 +102,6 @@ public class AgentRobot extends Agent {
 			DFService.register(this, dfd);
 		} catch (FIPAException fe) {
 			fe.printStackTrace();
-			// System.out.println(getLocalName() + " failed to register to
-			// dfs");
 			((JPanelRobot) panelRobot).setStatut(getLocalName() + " failed to register to dfs");
 		}
 
@@ -137,22 +109,23 @@ public class AgentRobot extends Agent {
 
 	/**
 	 * Method for initialize a TCP connection
+	 * 
+	 * @param addr
+	 * @param port
+	 * @return
 	 */
 	private Boolean initializeConnection(InetAddress addr, int port) {
-		// System.out.println("Trying to connect to Synapxis");
 		panelRobot.setStatut(getLocalName() + " trying to connect to Synapxis");
 
 		try {
 			socket = new Socket(addr, port);
 			inputMessageFromRobot = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			outSendMessage = new PrintStream(socket.getOutputStream());
-			// System.out.println("Connected to Synapxis");
 			panelRobot.setStatut(getLocalName() + " connected to Synapxis");
 
 			return true;
 		} catch (Exception e) {
 			e.printStackTrace();
-			// System.out.println("Fail to connect to Synapxis");
 			panelRobot.setStatut(getLocalName() + " fail to connect to Synapxis");
 			doDelete();
 			return false;
@@ -165,13 +138,12 @@ public class AgentRobot extends Agent {
 	 */
 	private Boolean closeConnection() {
 		try {
+			sendMessageToSynapxis("disconnect");
 			socket.close();
-			// System.out.println("Connection closed");
 			panelRobot.setStatut(getLocalName() + " connection close");
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
-			// System.out.println("Connection close failed");
 			panelRobot.setStatut(getLocalName() + " connection close failed");
 			return false;
 		}
@@ -179,8 +151,12 @@ public class AgentRobot extends Agent {
 
 	/**
 	 * Method for sending a message to the Synapxis robot
+	 * 
+	 * @param message
+	 * @return Message from synpaxis
 	 */
 	private String sendMessageToSynapxis(String message) {
+		System.out.println(message);
 		outSendMessage.println(message);
 		try {
 			messageFromRobot = inputMessageFromRobot.readLine();
@@ -188,7 +164,6 @@ public class AgentRobot extends Agent {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		// System.out.println("FROM Synapxis: " + messageFromRobot);
 		panelRobot.setStatut("FROM Synapxis: " + messageFromRobot);
 		return messageFromRobot;
 	}
@@ -204,6 +179,7 @@ public class AgentRobot extends Agent {
 	private AID[] listAgentsPresse;
 	private AID agentPresse;
 	private JPanelRobot panelRobot;
+	private JPanelSuiviProd panelSuiviProd;
 
 	// debug
 	private String message;
@@ -229,12 +205,9 @@ public class AgentRobot extends Agent {
 			template.addServices(sd);
 			try {
 				DFAgentDescription[] result = DFService.search(myAgent, template);
-				// System.out.println("Le robot: " + getLocalName() + " a trouvé
-				// les agents presse suivants:");
 				listAgentsPresse = new AID[result.length];
 				for (int i = 0; i < result.length; ++i) {
 					listAgentsPresse[i] = result[i].getName();
-					// System.out.println(listAgentsPresse[i].getName());
 				}
 			} catch (FIPAException fe) {
 				fe.printStackTrace();
@@ -242,9 +215,6 @@ public class AgentRobot extends Agent {
 
 			switch (step) {
 			case 0:
-				// debug
-				// System.out.println("STEP = " + step);
-
 				messageBehaviour = "isWorking"; // ask all the press if they are
 												// working
 				agentPresse = null;
@@ -252,9 +222,6 @@ public class AgentRobot extends Agent {
 				step = 1;
 				break;
 			case 1:
-				// debug
-				// System.out.println("STEP = " + step);
-
 				// Get all the responses from the press
 				reply = myAgent.receive(mtpresse);
 				if (reply != null) {
@@ -275,24 +242,18 @@ public class AgentRobot extends Agent {
 						// proposition
 						repliesCnt = 0;
 						step = 5;
-						System.out.println("All presses are working");
+						panelRobot.setStatut("All presses are working");
 					}
 				} else {
 					block();
 				}
 				break;
 			case 2:
-				// debug
-				// System.out.println("STEP = " + step);
-
 				messageBehaviour = "isFull"; // ask to the press if it is full
 				makeAndSendCfp(agentPresse, "presse", messageBehaviour, mtpresse);
 				step = 3;
 				break;
 			case 3:
-				// debug
-				// System.out.println("STEP = " + step);
-
 				// Get the response from the press
 				reply = myAgent.receive(mtpresse);
 				if (reply != null) {
@@ -306,6 +267,7 @@ public class AgentRobot extends Agent {
 																// have to
 																// discharge
 							makeAndSendAcceptProposal(agentPresse, "presse", messageBehaviour, mtpresse);
+							panelRobot.setStatut(messageBehaviour + " en cours");
 						} else {
 							if (reply.getContent().equals("empty")) {
 								// The machine is empty
@@ -315,6 +277,7 @@ public class AgentRobot extends Agent {
 																	// have to
 																	// charge
 								makeAndSendAcceptProposal(agentPresse, "presse", messageBehaviour, mtpresse);
+								panelRobot.setStatut(messageBehaviour + " en cours");
 							} else {
 								// Got an unexpected message, we refuse the
 								// proposal
@@ -336,9 +299,6 @@ public class AgentRobot extends Agent {
 				}
 				break;
 			case 4:
-				// debug
-				// System.out.println("STEP = " + step);
-
 				// Receive the purchase order reply
 				reply = myAgent.receive(mtpresse);
 				if (reply != null) {
@@ -350,19 +310,20 @@ public class AgentRobot extends Agent {
 						if (messageBehaviour.equals("chargement") || messageBehaviour.equals("dechargement")) {
 							String response = sendMessageToSynapxis(messageBehaviour);
 							while (response == null) {
-								// while (!response.equals("chargement done") ||
-								// !response.equals("dechargement done")) {
 								// wait the response from Synapxis
 
 							}
-							panelRobot.setStatut("Message from Synapxis: " + response);
+							panelRobot.setStatut(response);
 							// job done, send a message to the press that it can
 							// start is job if it has to be
 							sendMessageToAgent(agentPresse, response);
+							if (response.equals("dechargement done")) {
+								panelSuiviProd.addPiece();
+							}
 
 						}
 					} else {
-						System.out.println("Attempt failed: the robot didn't " + messageBehaviour);
+						panelRobot.setStatut("Attempt failed: the robot didn't " + messageBehaviour);
 					}
 					step = 5;
 				} else {
@@ -408,8 +369,6 @@ public class AgentRobot extends Agent {
 			// Prepare the template to get proposals
 			template = MessageTemplate.and(MessageTemplate.MatchConversationId(convID),
 					MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-			// debug
-			System.out.println("CFP send: " + cfp);
 		}
 
 		/**
@@ -427,8 +386,6 @@ public class AgentRobot extends Agent {
 			// Prepare the template to get proposals
 			template = MessageTemplate.and(MessageTemplate.MatchConversationId(convID),
 					MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-			// debug
-			System.out.println("CFP send: " + cfp);
 
 		}
 
@@ -445,8 +402,6 @@ public class AgentRobot extends Agent {
 			// Préparation du template pour obtenir la réponse de la demande
 			template = MessageTemplate.and(MessageTemplate.MatchConversationId(convID),
 					MessageTemplate.MatchInReplyTo(order.getReplyWith()));
-			// debug
-			System.out.println("Accept-Proposal send: " + order);
 		}
 
 		/**
@@ -459,8 +414,6 @@ public class AgentRobot extends Agent {
 			order.setConversationId(convID);
 			order.setReplyWith("order" + System.currentTimeMillis());
 			myAgent.send(order);
-			// debug
-			System.out.println("Reject-Proposal send: " + order);
 		}
 
 		/**
@@ -471,9 +424,6 @@ public class AgentRobot extends Agent {
 			message.addReceiver(agent);
 			message.setContent(content);
 			send(message);
-
-			// debug
-			System.out.println("Inform send: " + message);
 		}
 
 	} // End of inner class RequestPerformer

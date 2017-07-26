@@ -6,7 +6,7 @@ STRUCT
 
 	(*Paramètres production*)
 	lrPositionBasse: LREAL;
-	lrVitesse: LREAL;
+	lrVitesse: INT;
 	
 END_STRUCT
 END_TYPE]]></Declaration>

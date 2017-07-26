@@ -1,24 +1,21 @@
 package app.gui;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
+import java.awt.GridLayout;
 
-import javax.swing.JComponent;
+import javax.swing.Box;
+
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-public class JPanelDecorator extends JPanel {
+import javax.swing.SwingConstants;
 
+public class JPanelSuiviProd extends JPanel {
 	/*------------------------------------------------------------------*\
 	|*							Constructeurs							*|
 	\*------------------------------------------------------------------*/
 
-	/**
-	 * @param jcomponentcentre
-	 * @param marge
-	 */
-	public JPanelDecorator(JComponent jcomponentcentre, int marge) {
-		this.jcomponentcentre = jcomponentcentre;
-		this.marge = marge;
+	public JPanelSuiviProd() {
 
 		geometry();
 		control();
@@ -33,6 +30,15 @@ public class JPanelDecorator extends JPanel {
 	|*				Set				*|
 	\*------------------------------*/
 
+	/**
+	 * @param message
+	 */
+	public void addPiece() {
+		int i = Integer.parseInt(lblNbPiecesProduites.getText());
+		i++;
+		lblNbPiecesProduites.setText(i + "");
+	}
+
 	/*------------------------------*\
 	|*				Get				*|
 	\*------------------------------*/
@@ -42,34 +48,37 @@ public class JPanelDecorator extends JPanel {
 	\*------------------------------------------------------------------*/
 
 	private void geometry() {
+
+		lblNbPiecesProduites = new JLabel("0");
+		JPanel panel = new JPanel();
+
 		// Layout : Specification
 		{
 			BorderLayout layout = new BorderLayout();
+
 			setLayout(layout);
 		}
 
 		// JComponent : add
-		add(jcomponentcentre, BorderLayout.CENTER);
-		add(createJPanelMarge(), BorderLayout.NORTH);
-		add(createJPanelMarge(), BorderLayout.SOUTH);
-		add(createJPanelMarge(), BorderLayout.EAST);
-		add(createJPanelMarge(), BorderLayout.WEST);
-	}
 
-	private JPanel createJPanelMarge() {
-		JPanel panel = new JPanel();
-		Dimension dim = new Dimension(marge, marge);
-		panel.setPreferredSize(dim);
-		// debug
-		{
-			// panel.setBackground(Color.BLACK);
-		}
+		GridLayout gridlayout = new GridLayout(1, 2);
 
-		return panel;
+		Box bv1 = Box.createVerticalBox();
+
+		Box bh1 = Box.createHorizontalBox();
+
+		panel.setLayout(gridlayout);
+
+		panel.add(new JLabel("Nombre de pièces produites", SwingConstants.CENTER));
+		panel.add(lblNbPiecesProduites);
+
+		bv1.add(bh1);
+		bv1.add(panel);
+		add(bv1, BorderLayout.CENTER);
 	}
 
 	private void control() {
-		// rien
+
 	}
 
 	private void appearance() {
@@ -82,7 +91,6 @@ public class JPanelDecorator extends JPanel {
 	// Tools
 
 	// input
-	private JComponent jcomponentcentre;
-	private int marge;
+	private JLabel lblNbPiecesProduites;
 
 }

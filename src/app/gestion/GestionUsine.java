@@ -9,6 +9,7 @@ import app.gui.JFrameCopyright;
 import app.gui.JFrameUI;
 import app.gui.JPanelPresse;
 import app.gui.JPanelRobot;
+import app.gui.JPanelSuiviProd;
 import jade.core.Agent;
 import jade.core.ProfileImpl;
 import jade.core.Runtime;
@@ -45,6 +46,10 @@ public class GestionUsine extends Agent {
 	|*							Methodes Public							*|
 	\*------------------------------------------------------------------*/
 
+	/**
+	 * @param liste
+	 *            of agent
+	 */
 	public void cleanListeAgent(LinkedList<AgentController> liste) {
 		while (!liste.isEmpty()) {
 
@@ -60,6 +65,13 @@ public class GestionUsine extends Agent {
 		}
 	}
 
+	/**
+	 * @param list
+	 *            of agent
+	 * @param nbAgent
+	 *            Number of agent
+	 * @return the list
+	 */
 	public LinkedList<AgentController> killAgent(LinkedList<AgentController> liste, int nbAgent) {
 
 		try {
@@ -77,6 +89,11 @@ public class GestionUsine extends Agent {
 
 	}
 
+	/**
+	 * @param nomAgent
+	 * @param typeAgent
+	 * @return AgentController
+	 */
 	public AgentController createAgent(String nomAgent, String typeAgent) {
 
 		try {
@@ -93,11 +110,19 @@ public class GestionUsine extends Agent {
 		return t1;
 	}
 
-	public AgentController createAgent(String nomAgent, String typeAgent, JPanelRobot panelRobot) {
+	/**
+	 * @param nomAgent
+	 * @param typeAgent
+	 * @param panelRobot
+	 * @return The agent controller
+	 */
+	public AgentController createAgent(String nomAgent, String typeAgent, JPanelRobot panelRobot,
+			JPanelSuiviProd panelSuiviProd) {
 
 		try {
 			Object[] args = new Object[3];
 			args[0] = panelRobot;
+			args[1] = panelSuiviProd;
 
 			t1 = ac.createNewAgent(nomAgent, typeAgent, args);
 			// fire-up the agent
@@ -111,6 +136,12 @@ public class GestionUsine extends Agent {
 		return t1;
 	}
 
+	/**
+	 * @param nomAgent
+	 * @param typeAgent
+	 * @param panelPresse
+	 * @return the agent controller
+	 */
 	public AgentController createAgent(String nomAgent, String typeAgent, JPanelPresse panelPresse) {
 
 		try {
@@ -129,6 +160,18 @@ public class GestionUsine extends Agent {
 		return t1;
 	}
 
+	public void killAgent(AgentController agent) {
+		try {
+
+			agent.kill();
+			countAgent--;
+
+		} catch (StaleProxyException e) {
+			System.out.println("Error killing agent");
+		}
+
+	}
+
 	/*------------------------------*\
 	|*				Set				*|
 	\*------------------------------*/
@@ -136,22 +179,37 @@ public class GestionUsine extends Agent {
 	/*------------------------------*\
 	|*				Get				*|
 	\*------------------------------*/
+	/**
+	 * @return the number of agent
+	 */
 	public int getCountAgent() {
 		return countAgent;
 	}
 
+	/**
+	 * @return the agent controller
+	 */
 	public AgentController getAgentController() {
 		return t1;
 	}
 
+	/**
+	 * @return the agent container
+	 */
 	public AgentContainer getAgentContainer() {
 		return ac;
 	}
 
+	/**
+	 * @return the runtime
+	 */
 	public Runtime getRuntime() {
 		return rt;
 	}
 
+	/**
+	 * @return the profile implementation
+	 */
 	public ProfileImpl getProfileImple() {
 		return p;
 	}
@@ -170,4 +228,5 @@ public class GestionUsine extends Agent {
 	private ProfileImpl p;
 
 	private int countAgent = 0;
+
 }
